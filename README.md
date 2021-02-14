@@ -15,14 +15,15 @@ but recently switched to Ubuntu 20.04.
 
 
 ## Docker
-The 
+A simple way to build on Ubuntu is to use Docker
+First update your system.
 ~~~bash
 sudo apt update
 sudo apt upgrade
 
 ~~~
 
-Install docker:  https://docs.docker.com/engine/install/ubuntu/
+Next install docker.  I basically followed the instructions for ubuntu at  https://docs.docker.com/engine/install/ubuntu/
 
 ~~~bash
 sudo apt install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
@@ -35,22 +36,24 @@ sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io
 ~~~
 
-Install with Docker
+Once you have docker installed on your system, you can use the `Dockerfile` in the SGDK repository to setup a container.
 ~~~bash
 git checkout https://github.com/Stephane-D/SGDK.git
 cd SGDK
 sudo docker build -t sgdk .
+~~~~
+To test it out, try building the hello-world example in sample/basics
 
+~~~bash
 cd sample/basics/hello-world
-
 sudo docker run -rm -v $PWD:/src sgdk
 ~~~
 
 
-
 ## Installing SGDK on Ubuntu 20.04 with Wine
-I use Wine to run SGDK on Linux. I also use it to run Genesis emulators.  I generaly use
-Gens KMod and BlastEm for testing.
+I've already been using Wine on GNU/Linux to do Atari development with Altirra. So it's 
+not a big stretch for me to use Wine to run SGDK on Linux. I'm also using Wine to run 
+Genesis emulators.  I generaly use Gens KMod and BlastEm for testing.
 
 
 ### Install Wine
