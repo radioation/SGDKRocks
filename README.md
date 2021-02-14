@@ -223,5 +223,7 @@ int main(u16 arg) {
 %GDK_WIN%\bin\make -f %GDK_WIN%\makefile.gen
 ~~~
 
-
+This creates an out folder with a rom.bin file in it.  If you download and 
+copy genskmod to ${SGDK}/gens, you can run the bin file in wine  by 
+typiing `%GENS%` and loading the rom.bin from the File menu
 
