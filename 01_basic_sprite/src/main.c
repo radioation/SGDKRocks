@@ -15,20 +15,25 @@ int main(u16 hard)
 	VDP_setPalette( PAL2, rock.palette->data );
 
 	// Initialize the Sprite engine
-	SPR_init(0,0,0);
+	SPR_init();
 
-	// create the sprite from the resource
-	int ship_pos_x = 147;
-	int ship_pos_y = 150;
+	// create the ship sprite from the resource object
+	// and center it in the screen.  The Genesis display
+	// is 320x224 and the sprites in this example are 16
+	// pixels wide.  So subtract half of the sprite width
+	// and height from the horizontal and vertical centers
+	int ship_pos_x = 152; // 320/2 - 8  
+	int ship_pos_y = 102; // 224/2 - 8
 	shipSprite = SPR_addSprite( &ship, ship_pos_x, ship_pos_y, TILE_ATTR( PAL1, 0, FALSE, FALSE ));	
-		
-	int rock_pos_x = 147;
-	int rock_pos_y =  60;
+	
+	// place a single rock in the upper left portion of the screen
+	int rock_pos_x = 0;
+	int rock_pos_y = 0;
 	rockSprite = SPR_addSprite( &rock, rock_pos_x, rock_pos_y, TILE_ATTR( PAL2, 0, FALSE, FALSE ));	
 
 	while(TRUE)
 	{
-		// read input
+		// move the ship
 		/*ship_pos_y -= 2;
 		if( ship_pos_y <= 0  ) {
 			ship_pos_y = 240;
@@ -37,13 +42,18 @@ int main(u16 hard)
 		SPR_setPosition( shipSprite, ship_pos_x, ship_pos_y );
 		SPR_setPosition( rockSprite, rock_pos_x, rock_pos_y );
 
-		// draw current screen (logo, start screen, settings, game, gameover, credits...)
+		// draw current screen 
 		SPR_update();
 
-		// wait for screen refresh
+		// Wait for VBlank start
 		SYS_doVBlankProcess();
 	}
 
+	// Release the sprites. 
+	SPR_releaseSprite( shipSprite );
+	SPR_releaseSprite( rockSprite );
+
+	// stop the sprite engine
 	SPR_end();
 
 	return 0;
