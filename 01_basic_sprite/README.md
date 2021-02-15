@@ -42,7 +42,14 @@ Sega Genesis sprites can be created from 16 color indexed images.
 ## Pro Motion NG
 1. Create a new project using *"File|New Project|Create ..."*
 2. In the "Create a new Project" dialog box set the Type to "Sega Megadrive/Genesis (Generic)" and the Color Palette to "rainbow333.pal"
+
 ![New Project](https://github.com/radioation/SGDKRocks/blob/main/01_basic_sprite/imgs/pmng_new_project.png)
+3. Draw your sprite.  Take care to use only 15 colors or fewer. 
+4. Reduce the colors in your image to 16.  Use *"Colors|Reduce Colors..."*
+
+![Reduce Colors](https://github.com/radioation/SGDKRocks/blob/main/01_basic_sprite/imgs/pmng_reduce_colors_to_16.png)
+5. Once you're doing editing your image, save it as a PNG with *"File|Save Image As..."*
+![Save as PNG](https://github.com/radioation/SGDKRocks/blob/main/01_basic_sprite/imgs/pmng_export_png.png)
 
 
 
