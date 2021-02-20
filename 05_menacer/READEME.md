@@ -1,13 +1,24 @@
 # Sega Menacer Light Gun
-So, I don't actually yave a Sega Menacer, they're a bit more expensive 
+So, I don't actually have a Sega Menacer, they're a bit more expensive 
 than I'm willing to pay on ebay. OTOH, I found [this](https://www.youtube.com/watch?v=a9mCa0__SPQ)
-video  on youtube
+video  on YouTube.   I was able to get a relatively cheap Radica Menacer
+and modify it to work with my Sega Genesis and SGDK.
 
-Things to keep in mind
-* Brightness Matters
-* Guns aren't perfect.  My Modified Radica has the left-most part of the
-  screen at 84 and the right-most at 20.  
-* I'm unable to link using SGDK 1.60
+
+Things to keep in mind when using SGDK with the Menacer.
+* Brightness Matters. I thought something was wrong with my code initially because it was always returning -1 values.   Changing the background color fixed this.
+* Light guns aren't perfect.  My Modified Radica has the left-most part of the screen at 84 and the right-most at 20.  This needs to be handled in software.
+* The are some comments about calibration [here](http://gendev.spritesmind.net/forum/viewtopic.php?t=14&start=660)
+> So you have two things that any light gun game MUST do: first, convert the 
+> counter values into a pixel; and second, have some kind of calibration screen.
+>  To calibrate the gun, you put up a target on the screen with a message 
+>  telling the user to fire at the center of the target. A simple bulls-eye is 
+>  fine. You then look at where the gun SAYS the user is aiming, and adjust it 
+>  to be the center. It's best to have the user fire several times so as to take 
+>  into account the user's ability to hold the gun steady. Maybe show the user 
+>  where the gun thinks it's aimed based on the current average offset. The user 
+>  can just keep firing until the spot matches the center of the target.
+* I'm unable to link using SGDK 1.60.  It does work with 1.51
 ~~~cmd
 out/sega.o: In function `_EXTINT':
 (.text.keepboot+0x44e): undefined reference to `internalExtIntCB'
