@@ -1,6 +1,6 @@
 # Sega Menacer Light Gun
 So, I don't actually yave a Sega Menacer, they're a bit more expensive 
-than I'm willing to pay on ebay. OTOH, I found [this]( )
+than I'm willing to pay on ebay. OTOH, I found [this](https://www.youtube.com/watch?v=a9mCa0__SPQ)
 video  on youtube
 
 Things to keep in mind
