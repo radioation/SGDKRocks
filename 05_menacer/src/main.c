@@ -2,15 +2,11 @@
 
 int main()
 {
-	u8 value;
 
-	VDP_init();
 	// Set background brighter than 0.  Black background
 	// prevents menacer from returning X, Y values.
 	VDP_setBackgroundColor( 4 );
 
-	// Init joystick
-	JOY_init();
 
 	// check Port 2 for the Sega Menacer
 	bool menacerFound = FALSE;
@@ -28,7 +24,7 @@ int main()
 	{
 		if( menacerFound ) {	
 			// get the button states		
-			value = JOY_readJoypad(JOY_2);
+			u16 value = JOY_readJoypad(JOY_2);
 			if( value & BUTTON_A ) {
 				VDP_drawText("A", 8, 8 );
 			} else {
