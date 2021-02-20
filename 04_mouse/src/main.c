@@ -87,6 +87,27 @@ int main(u32 hard)
 			SPR_update();
 		}
 
+    // get the button states
+    s16 value = JOY_readJoypad(JOY_2);
+    if( value & BUTTON_A ) {
+      VDP_drawText("A", 8, 8 );
+    } else {
+      VDP_drawText(" ", 8, 8 );
+    }
+
+    if( value & BUTTON_B ) {
+      VDP_drawText("B", 10, 8 );
+    } else {
+      VDP_drawText(" ", 10, 8 );
+    }
+
+    if( value & BUTTON_C ) {
+      VDP_drawText("C", 12, 8 );
+    } else {
+      VDP_drawText(" ", 12, 8 );
+    }
+
+
 
 		SYS_doVBlankProcess();
 	}
