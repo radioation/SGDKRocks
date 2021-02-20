@@ -41,7 +41,7 @@ int main(u32 hard)
     mouseFound = TRUE;
     VDP_drawText("Mouse Found!", 14, 1 );
   } else {
-    VDP_drawText("No Mouse", 32, 1 );
+    VDP_drawText("No Mouse", 14, 1 );
 	}
 	bool prev_set = FALSE;
 	s32 x_mouse;
