@@ -14,7 +14,7 @@ $ find . -type f -exec grep  JOY_setMouseEventHandler {} + | wc
 Sega Genesis and Master System controllers are handled by the `JOY_*`
 functions in `joy.h.
 
-1. Determine if a mouse is attacked to the controller port
+1. Determine if a mouse is attached to the controller port
 ~~~c
 u8 portType = JOY_getPortType(PORT_2);
 if( portType == PORT_TYPE_MOUSE ) {
