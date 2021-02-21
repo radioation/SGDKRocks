@@ -30,7 +30,7 @@ out/sega.o: In function `_VINT':
 >  can just keep firing until the spot matches the center of the target.
 
 ## Basic Code 
-1. Determine if a Menacer is attached to the controller portA
+1. Determine if a Menacer is attached to the controller port
 ~~~c
 if(portType == PORT_TYPE_MENACER )
 {
@@ -97,13 +97,14 @@ correspond to pixels on the left.  This clearly isn't what we want in a game.
 ### Lookup Tables
 Some searching brought me to [this](https://gendev.spritesmind.net/mirrors/eke/gen_lightgun.pdf) pdf.
 It points out that :
+* The Vertical values can be directly converted to a Y pixels.
 * The Horizontal values reported are equivalent to two screen pixels
 * Commercial games use a lookup table to map Horizontal values to screen pixels
-* The Vertical values can be directly converted to a Y pixels.
 
 So I made lookup table that can hold the full range of possible 
 values reported by `JOY_readJoypadX()` including the gap.
-
+I populate the table with screen coordinates starting at -40 (just a guess)
+and incrementing by 2.
 ~~~c
 
 static fix32 xLookup[ 256 ];  // full rangeA for JOY_readJoypadX()
@@ -111,7 +112,7 @@ static fix32 xLookup[ 256 ];  // full rangeA for JOY_readJoypadX()
 
 static void calculateXLookup() {
   // My own experience has 84 at left edge of the monitor, and 13 on the right.
-	// I'll start populating the table left to right with a screen value of -40
+  // I'll start populating the table left to right with a screen value of -40
   fix32 pos = FIX32(-40);
   for( int i=60; i < 183; ++i ) {
     xLookup[i] =  pos;
@@ -130,7 +131,7 @@ static void calculateXLookup() {
 
 }
 ~~~
-Once the lookup table is ready, X and Y screen coordinates can be found 
+Once the lookup table is ready, decent X and Y pixel values  can be found 
 pretty easily
 ~~~c
   crosshairsPosX = xLookup[ xVal ];  // lookup the screen coordinate based on Horizontal Value
@@ -147,7 +148,9 @@ left and up by 8 pixels. I do this by subtracting 8 from the X and Y values.
 
 ### Calibration
 The lookup table gives pretty good results, but don't line up with the
-sights of my Menacer.   To compensate for this I added code that:
+sights of my Menacer.  Different Sega and Radica Menacers are unlikely to
+have the same offsets as mine, so hardcoding an offset isn't a great idea. 
+To compensate for this I added code that:
 1. Has the user aim at a target at the center of the screen
 2. Has the user fire 10 shots with the trigger.  The code saves the lookup
 values for each shot
