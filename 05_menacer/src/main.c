@@ -2,7 +2,7 @@
 #include "resources.h"
 
 
-
+u16 crosshairsMode = 0;  // 0 raw values, 1 with lookup,  2 with lookup and calibration offset
 static bool calibrateMode = FALSE;
 #define MAX_VALS 10
 static fix32 xValues[MAX_VALS];
@@ -15,7 +15,7 @@ static fix32 yOffset = FIX32(0);
 
 //static fix32 scaleFactorX = FIX32(1.0);  // according to gen_lightgun.pdf each H counter unit is equivalent to two pixels.
 //static fix32 scaleFactorY = FIX32(1.0);  // according to gen_lightgun.pdf each V counter is directly convertable to a Y coordinate
-static fix32 xLookup[ 256 ];
+static fix32 xLookup[ 256 ];  // full range for JOY_readJoypadX()
 
 
 
@@ -27,8 +27,8 @@ static void calculateOffset() {
 		xTemp = fix32Add( xTemp, xValues[i] );
 		yTemp = fix32Add( yTemp, yValues[i] );
 	}
-	xTemp = fix32Div( xTemp, FIX32( currentValue -1 ) );
-	yTemp = fix32Div( yTemp, FIX32( currentValue -1 ) );
+	xTemp = fix32Div( xTemp, FIX32( currentValue ) );
+	yTemp = fix32Div( yTemp, FIX32( currentValue ) );
 
 	// center should be 160, 112 
 	xOffset = FIX32(160) - xTemp;		
@@ -42,19 +42,21 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 
 		// A
 		if( changed == BUTTON_A && joypadState == BUTTON_A) {
-			// get reading
-			s16 xVal = JOY_readJoypadX(JOY_2);
-			s16 yVal = JOY_readJoypadY(JOY_2);
-			// store values for calculation
-			if( currentValue < MAX_VALS ) {
-				xValues[currentValue] = xLookup[xVal];
-				yValues[currentValue] = FIX32(yVal);
-				++currentValue;
-			}
-			if( currentValue == MAX_VALS ){
-				calculateOffset();
-				currentValue = 0;
-				calibrateMode = FALSE;
+			if( calibrateMode ) {
+				// get reading
+				s16 xVal = JOY_readJoypadX(JOY_2);
+				s16 yVal = JOY_readJoypadY(JOY_2);
+				// store values for calculation
+				if( currentValue < MAX_VALS ) {
+					xValues[currentValue] = xLookup[xVal];
+					yValues[currentValue] = FIX32(yVal);
+					++currentValue;
+				}
+				if( currentValue == MAX_VALS ){
+					calculateOffset();
+					currentValue = 0;
+					calibrateMode = FALSE;
+				}
 			}
 		}
 
@@ -63,6 +65,14 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 		if( changed == BUTTON_B && joypadState == BUTTON_B ) {
 			currentValue = 0;
 			calibrateMode = TRUE;
+		}
+
+		// C change render mode
+		if( changed == BUTTON_C && joypadState == BUTTON_C ) {
+			++crosshairsMode;
+			if( crosshairsMode > 2 ) {
+				crosshairsMode = 0;
+			}
 		}
 
 
@@ -119,9 +129,9 @@ int main()
 				FALSE         // flip the sprite horizontally
 				));
 
-	// set target in the center position (target is 32x32 )
-	fix32 targetPosX = FIX32(144.0);
-	fix32 targetPosY = FIX32(96.0);
+	// set target in the center position (target is 32x32 ) 
+	fix32 targetPosX = FIX32(144.0); // 160 - 16 = 144
+	fix32 targetPosY = FIX32(96.0);  // 112 - 16 = 96
 
 	targetSprite = SPR_addSprite( &target,              // Sprite defined in resource.res
 			fix32ToInt(targetPosX), // starting X position
@@ -157,7 +167,9 @@ int main()
 		VDP_drawText("Menacer NOT found.", 11, 1);
 	}
 
-	while(1)
+	///////////////////////////////////////////////////////////////////////////////////
+	// Main Loop!
+	while(TRUE)
 	{
 		if( menacerFound ) {	
 			// get the button states		
@@ -181,7 +193,7 @@ int main()
 			}
 
 			// The menacer appears to return 8-bit values (0 to 255)
-			//if both values are -1, the gun is aiming off screen.	
+			// if both values are -1, the gun is aiming off screen.	
 			s16 xVal = JOY_readJoypadX(JOY_2);
 			s16 yVal = JOY_readJoypadY(JOY_2);
 			char message[40];
@@ -195,13 +207,29 @@ int main()
 				VDP_drawText("                              ", 5, 3);
 			}
 
-			// set crosshair position
-			crosshairsPosX = fix32Add(xLookup[ xVal ], xOffset);
-			crosshairsPosY = fix32Add(FIX32( yVal  ), yOffset);
+			// set crosshairs position. Subtract 8 from each to compensate for 16x16 sprite
+			switch( crosshairsMode ) { 
+			case 0: // raw
+				VDP_drawText("   Render raw joypad values   ", 5, 5);
+				crosshairsPosX = FIX32( xVal - 8 );
+				crosshairsPosY = FIX32( yVal - 8 );
+				break;
+			case 1: // with lookup
+				VDP_drawText("   Render with lookup table   ", 5, 5);
+				crosshairsPosX = fix32Sub(xLookup[ xVal ], FIX32(8));
+				crosshairsPosY = fix32Sub(FIX32( yVal  ),  FIX32(8));
+				break;
+			case 2: // with lookup + offset
+				VDP_drawText("  Render with lookup + offset ", 5, 5);
+				crosshairsPosX = fix32Sub(fix32Add(xLookup[xVal], xOffset), FIX32(8));
+				crosshairsPosY = fix32Sub(fix32Add(FIX32( yVal ), yOffset), FIX32(8));
+			default:
+				break;
+			}
 		}
 
 		// Set the Sprite Positions.
-		SPR_setPosition( targetSprite, fix32ToInt( targetPosX ), fix32ToInt( targetPosY ) );
+		// SPR_setPosition( targetSprite, fix32ToInt( targetPosX ), fix32ToInt( targetPosY ) );
 		SPR_setPosition( crosshairsSprite, fix32ToInt( crosshairsPosX ), fix32ToInt( crosshairsPosY ) );
 		SPR_update();
 

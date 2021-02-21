@@ -17,7 +17,7 @@ out/sega.o: In function `_VINT':
 ~~~
 * Brightness Matters. In my first attempt, my calls to `JOY_readJoypadX()` and `JOY_readJoypadY()` always returned -1 values.   Changing the background color fixed this.
 * The X and Y values returned by `JOY_readJoypadX()` and `JOY_readJoypadY()` are 8 bits.  This is smaller than the 320 pixels the Sega Genesis can display.
-* The X values from `JOY_readJoypadX()` appear to be discontinuous.  From left-to-right I'm seeing approximately values of 80-182:229-255:0-13 with my modified Radica Menacer.
+* The X values from `JOY_readJoypadX()` are discontinuous.  From left-to-right I'm seeing approximately values of 84-182:229-255:0-13 with my modified Radica Menacer.
 * The are some comments about calibration [here](http://gendev.spritesmind.net/forum/viewtopic.php?t=14&start=660)
 > So you have two things that any light gun game MUST do: first, convert the 
 > counter values into a pixel; and second, have some kind of calibration screen.
@@ -83,7 +83,135 @@ screen coordinates so you'll have to adjust them at runtime
 }
 ~~~
 
-## Getting Screen Coordinates from My Modded Radica Menacer
+## Mapping JOY_readJoypadX Values to Pixel Coordinates
+As mentioned above, the X values from `JOY_readJoypadX()` are disjoint.  As I move 
+the light gun from the left side of my CRT to the right I see the following values (approximately):
+* 84 through 182 
+* 229 thorugh 255
+* 0 to 13 
+The values don't cover the entire screen.  84 is far from the left side of the screen.
+Further, there's a discontinity from 182 to 229. Causing a jump on the right side of the 
+screen. Even worse, the values reported by the gun on the far right side of the screen
+correspond to pixels on the left.  This clearly isn't what we want in a game.
+
+### Lookup Tables
+Some searching brought me to [this](https://gendev.spritesmind.net/mirrors/eke/gen_lightgun.pdf) pdf.
+It points out that :
+* The Horizontal values reported are equivalent to two screen pixels
+* Commercial games use a lookup table to map Horizontal values to screen pixels
+* The Vertical values can be directly converted to a Y pixels.
+
+So I made lookup table that can hold the full range of possible 
+values reported by `JOY_readJoypadX()` including the gap.
+
+~~~c
+
+static fix32 xLookup[ 256 ];  // full rangeA for JOY_readJoypadX()
+
+
+static void calculateXLookup() {
+  // My own experience has 84 at left edge of the monitor, and 13 on the right.
+	// I'll start populating the table left to right with a screen value of -40
+  fix32 pos = FIX32(-40);
+  for( int i=60; i < 183; ++i ) {
+    xLookup[i] =  pos;
+    pos = fix32Add( pos, FIX32(2) );
+  }
+	// handle the gap in X values 
+  for( int i=229; i < 256; ++i ) {
+    xLookup[i] =  pos;
+    pos = fix32Add( pos, FIX32(2) );
+  }
+	// handle the wrap around to 0  
+  for( int i=0; i < 60; ++i ) {
+    xLookup[i] =  pos;
+    pos = fix32Add( pos, FIX32(2) );
+  }
+
+}
+~~~
+Once the lookup table is ready, X and Y screen coordinates can be found 
+pretty easily
+~~~c
+  crosshairsPosX = xLookup[ xVal ];  // lookup the screen coordinate based on Horizontal Value
+  crosshairsPosY = FIX32( yVal  );   // direct conversion of Vertical value
+~~~
+
+Depending on what you're displaying, you may want to factor in an offset.
+In my case I want to center a 16 x 16 sprite.  So I want to shift it to the 
+left and up by 8 pixels. I do this by subtracting 8 from the X and Y values.
+~~~c
+  crosshairsPosX = fix32Sub(xLookup[ xVal ], FIX32(8));
+  crosshairsPosY = fix32Sub(FIX32( yVal  ),  FIX32(8));
+~~~
+
+### Calibration
+The lookup table gives pretty good results, but don't line up with the
+sights of my Menacer.   To compensate for this I added code that:
+1. Has the user aim at a target at the center of the screen
+2. Has the user fire 10 shots with the trigger.  The code saves the lookup
+values for each shot
+3. Calculates an average X and Y position from the shots fired
+4. Calculate an offset from the screen center and the average X/Y values
+
+
+To get the avere I defined an array to store the X and Y positiions
+~~~c
+#define MAX_VALS 10
+static fix32 xValues[MAX_VALS];
+static fix32 yValues[MAX_VALS];
+static u16 currentValue = 0;
+~~~
+The Joypad handler stores values when the trigger (BUTTON_A) is pulled
+~~~c
+    if( changed == BUTTON_A && joypadState == BUTTON_A) {
+      if( calibrateMode ) {
+        // get reading
+        s16 xVal = JOY_readJoypadX(JOY_2);
+        s16 yVal = JOY_readJoypadY(JOY_2);
+        // store values for calculation
+        if( currentValue < MAX_VALS ) {
+          xValues[currentValue] = xLookup[xVal];
+          yValues[currentValue] = FIX32(yVal);
+          ++currentValue;
+        }
+        if( currentValue == MAX_VALS ){
+          calculateOffset();
+          currentValue = 0;
+          calibrateMode = FALSE;
+        }
+      }
+    }
+~~~
+And calculates the offsets using the average
+~~~c
+static void calculateOffset() {
+  fix32 xTemp = FIX32(0);
+  fix32 yTemp = FIX32(0);
+  // get average X and Y
+  for( int i=0; i < currentValue; ++i ) {
+    xTemp = fix32Add( xTemp, xValues[i] );
+    yTemp = fix32Add( yTemp, yValues[i] );
+  }
+  xTemp = fix32Div( xTemp, FIX32( currentValue ) );
+  yTemp = fix32Div( yTemp, FIX32( currentValue ) );
+
+  // center should be 160, 112
+  xOffset = FIX32(160) - xTemp;
+  yOffset = FIX32(112) - yTemp;
+
+}
+~~~
+
+The crosshair positions are now calculated with the lookup table *and* offset values
+~~~c
+crosshairsPosX = fix32Sub(fix32Add(xLookup[xVal], xOffset), FIX32(8));
+crosshairsPosY = fix32Sub(fix32Add(FIX32( yVal ), yOffset), FIX32(8));
+~~~
+
+
+
+
 
 
 
