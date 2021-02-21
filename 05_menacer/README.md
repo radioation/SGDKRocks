@@ -6,8 +6,18 @@ and modify it to work with my Sega Genesis and SGDK.
 
 
 Things to keep in mind when using SGDK with the Menacer.
-* Brightness Matters. I thought something was wrong with my code initially because it was always returning -1 values.   Changing the background color fixed this.
-* Light guns aren't perfect.  My Modified Radica has the left-most part of the screen at 84 and the right-most at 20.  This needs to be handled in software.
+* I'm unable to link using SGDK 1.60.  It does work with 1.51
+~~~cmd
+out/sega.o: In function `_EXTINT':
+(.text.keepboot+0x44e): undefined reference to `internalExtIntCB'
+out/sega.o: In function `_HINT':
+(.text.keepboot+0x460): undefined reference to `internalHIntCB'
+out/sega.o: In function `_VINT':
+(.text.keepboot+0x472): undefined reference to `internalVIntCB'
+~~~
+* Brightness Matters. In my first attempt, my calls to `JOY_readJoypadX()` and `JOY_readJoypadY()` always returned -1 values.   Changing the background color fixed this.
+* The X and Y values returned by `JOY_readJoypadX()` and `JOY_readJoypadY()` are 8 bits.  This is smaller than the 320 pixels the Sega Genesis can display.
+* The X values from `JOY_readJoypadX()` appear to be discontinuous.  From left-to-right I'm seeing approximately values of 80-182:229-255:0-13 with my modified Radica Menacer.
 * The are some comments about calibration [here](http://gendev.spritesmind.net/forum/viewtopic.php?t=14&start=660)
 > So you have two things that any light gun game MUST do: first, convert the 
 > counter values into a pixel; and second, have some kind of calibration screen.
@@ -18,17 +28,28 @@ Things to keep in mind when using SGDK with the Menacer.
 >  into account the user's ability to hold the gun steady. Maybe show the user 
 >  where the gun thinks it's aimed based on the current average offset. The user 
 >  can just keep firing until the spot matches the center of the target.
-* I'm unable to link using SGDK 1.60.  It does work with 1.51
-~~~cmd
-out/sega.o: In function `_EXTINT':
-(.text.keepboot+0x44e): undefined reference to `internalExtIntCB'
-out/sega.o: In function `_HINT':
-(.text.keepboot+0x460): undefined reference to `internalHIntCB'
-out/sega.o: In function `_VINT':
-(.text.keepboot+0x472): undefined reference to `internalVIntCB'
-~~~
 
 ## Basic Code 
+1. Determine if a Menacer is attached to the controller portA
+~~~c
+if(portType == PORT_TYPE_MENACER )
+{
+	// ... do stuff here
+}		
+~~~
+2. Setup Menacer support
+~~~c
+if(portType == PORT_TYPE_MENACER )
+{
+	JOY_setSupport(PORT_2, JOY_SUPPORT_MENACER);
+}
+~~~
+3. Read X and Y values for the mouse with `JOY_readJoypadX()` and `JOY_readJoypadY()`
+These functions are 8-bit and return values ranging from 0 to 255.  The Y value is 
+continuous.  The X value is discontinuous.   Neither X nor Y map exactly to the 
+screen coordinates so you'll have to adjust them at runtime
+
+### Full Code
 ~~~c
 	// check Port 2 for the Sega Menacer
 	bool menacerFound = FALSE;
@@ -61,3 +82,10 @@ out/sega.o: In function `_VINT':
 	}
 }
 ~~~
+
+## Getting Screen Coordinates from My Modded Radica Menacer
+
+
+
+
+
