@@ -149,7 +149,11 @@ int main()
 
 	// Set background brighter than 0.	Black background
 	// prevents menacer from returning X, Y values.
-	VDP_setBackgroundColor( 4 );
+	//VDP_setBackgroundColor( 4 );
+
+    VDP_setPaletteColor(15, 0x0000);
+    VDP_setTextPalette(0);
+    VDP_setPaletteColor(0, 0x0844);
 
 	// Asynchronous joystick handler. 
 	JOY_setEventHandler (joypadHandler );
@@ -175,21 +179,21 @@ int main()
 			// get the button states		
 			u16 value = JOY_readJoypad(JOY_2);
 			if( value & BUTTON_A ) {
-				VDP_drawText("A", 8, 23);
+				VDP_drawText("A", 18, 9);
 			} else {
-				VDP_drawText(" ", 8, 23);
+				VDP_drawText(" ", 18, 9);
 			}
 
 			if( value & BUTTON_B ) {
-				VDP_drawText("B", 10, 23);
+				VDP_drawText("B", 20, 9);
 			} else {
-				VDP_drawText(" ", 10, 23);
+				VDP_drawText(" ", 20, 9);
 			}
 
 			if( value & BUTTON_C ) {
-				VDP_drawText("C", 12, 23);
+				VDP_drawText("C", 22, 9);
 			} else {
-				VDP_drawText(" ", 12, 23);
+				VDP_drawText(" ", 22, 9);
 			}
 
 			// The menacer appears to return 8-bit values (0 to 255)
@@ -198,7 +202,7 @@ int main()
 			s16 yVal = JOY_readJoypadY(JOY_2);
 			char message[40];
 			sprintf( message, "Menacer Values x:%d, y:%d      ", xVal, yVal );
-			VDP_drawText(message, 8, 25 );
+			VDP_drawText(message, 8, 7 );
 
 
 			if( calibrateMode ) {
