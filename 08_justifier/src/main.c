@@ -13,8 +13,6 @@ static u16 currentValue = 0;
 static fix32 xOffset = FIX32(0);
 static fix32 yOffset = FIX32(0);
 
-//static fix32 scaleFactorX = FIX32(1.0);  // according to gen_lightgun.pdf each H counter unit is equivalent to two pixels.
-//static fix32 scaleFactorY = FIX32(1.0);  // according to gen_lightgun.pdf each V counter is directly convertable to a Y coordinate
 static fix32 xLookup[ 256 ];  // full range for JOY_readJoypadX()
 
 
@@ -38,7 +36,21 @@ static void calculateOffset() {
 
 
 static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
-  if( joypadId == JOY_2  ) {
+
+	// standard controller handles modes
+	if( joypadId == JOY_1  ) {
+		if( changed == BUTTON_B && joypadState == BUTTON_B ) {
+			currentValue = 0;
+			calibrateMode = TRUE;
+		} else if( changed == BUTTON_C && joypadState == BUTTON_C ) {
+
+			++crosshairsMode;
+			if( crosshairsMode > 2 ) {
+				crosshairsMode = 0;
+			}
+
+		}
+	}else if( joypadId == JOY_2  ) {
 
 		// A
 		if( changed == BUTTON_A && joypadState == BUTTON_A) {
@@ -60,53 +72,24 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 			}
 		}
 
-
-		// B
-		if( changed == BUTTON_B && joypadState == BUTTON_B ) {
-			currentValue = 0;
-			calibrateMode = TRUE;
-		}
-
-		// C change render mode
-		if( changed == BUTTON_C && joypadState == BUTTON_C ) {
-			++crosshairsMode;
-			if( crosshairsMode > 2 ) {
-				crosshairsMode = 0;
-			}
-		}
-
-
 	}
 }
+
 
 static void calculateXLookup() {
-	// T2
-	// $70-$83   :  112-131   : Total hvals 20
-	// $84-$B6; $E5-$FF; $00-$42  :  132-182; 229-255; 0-66   :  51; 27; 67  -> only 51+27+66 = 145 hvals 
-	// $43-$6F   : 67-111  : 45 hvals
-	//  there's only 210 havls total with many offscreen
-	//  The active area is 290 < 320 pixels.
-	// since I'm going to bother with a calibration step  and offset I will use arbitray values
-	//  in the lookup
-	//
-	//  My own experience has puts 84  the left edge of the monitor, so I'll start with 60
-	fix32 pos = FIX32(-40);	
-	for( int i=60; i < 183; ++i ) {
-		xLookup[i] =  pos;
-		pos = fix32Add( pos, FIX32(2) );
-	}
-	for( int i=229; i < 256; ++i ) {
-		xLookup[i] =  pos;
-		pos = fix32Add( pos, FIX32(2) );
-	}
-	for( int i=0; i < 60; ++i ) {
-		xLookup[i] =  pos;
-		pos = fix32Add( pos, FIX32(2) );
-	}
+  // My blue justifier appears to return 34 through 176 when I pan 
+	// across my TV screen in H32 mode.   so about 142 values.
+
+  fix32 pos = FIX32(0);
+  for( int i=34; i < 176; ++i ) {
+    xLookup[i] =  pos;
+    pos = fix32Add( pos, FIX32(2.25) );
+  }
 
 }
 
-
+		
+			
 int main()
 {
 
@@ -143,17 +126,15 @@ int main()
 				));
 
 	///////////////////////////////////////////////////////////////////////////////////
-	// Menacer Setup
-	// create lookup table
+	// Justifier Setup
+	//
 	calculateXLookup();
 
-	// Set background brighter than 0.	Black background
-	// prevents menacer from returning X, Y values.
-	//VDP_setBackgroundColor( 4 );
-
-    VDP_setPaletteColor(15, 0x0000);
-    VDP_setTextPalette(0);
-    VDP_setPaletteColor(0, 0x0844);
+	// Set background brighter than 0.	darker backgrounds
+	// prevent Justifier from returning X, Y values.
+	VDP_setPaletteColor(15, 0x0000);
+	VDP_setTextPalette(0);
+	VDP_setPaletteColor(0, RGB24_TO_VDPCOLOR(0x4488ff)); // seems to work OK
 
 	// Asynchronous joystick handler. 
 	JOY_setEventHandler (joypadHandler );
@@ -184,19 +165,10 @@ int main()
 				VDP_drawText(" ", 18, 9);
 			}
 
-			if( value & BUTTON_B ) {
-				VDP_drawText("B", 20, 9);
-			} else {
-				VDP_drawText(" ", 20, 9);
-			}
 
-			if( value & BUTTON_C ) {
-				VDP_drawText("C", 22, 9);
-			} else {
-				VDP_drawText(" ", 22, 9);
-			}
-
-			// The menacer appears to return 8-bit values (0 to 255)
+			// My blue justifier appears to return 34 through 176 when I use it on 
+			// H32 mode.  
+			// 
 			// if both values are -1, the gun is aiming off screen.	
 			s16 xVal = JOY_readJoypadX(JOY_2);
 			s16 yVal = JOY_readJoypadY(JOY_2);
@@ -213,22 +185,22 @@ int main()
 
 			// set crosshairs position. Subtract 8 from each to compensate for 16x16 sprite
 			switch( crosshairsMode ) { 
-			case 0: // raw
-				VDP_drawText("   Render raw joypad values   ", 5, 5);
-				crosshairsPosX = FIX32( xVal - 8 );
-				crosshairsPosY = FIX32( yVal - 8 );
-				break;
-			case 1: // with lookup
-				VDP_drawText("   Render with lookup table   ", 5, 5);
-				crosshairsPosX = fix32Sub(xLookup[ xVal ], FIX32(8));
-				crosshairsPosY = fix32Sub(FIX32( yVal  ),  FIX32(8));
-				break;
-			case 2: // with lookup + offset
-				VDP_drawText("  Render with lookup + offset ", 5, 5);
-				crosshairsPosX = fix32Sub(fix32Add(xLookup[xVal], xOffset), FIX32(8));
-				crosshairsPosY = fix32Sub(fix32Add(FIX32( yVal ), yOffset), FIX32(8));
-			default:
-				break;
+				case 0: // raw
+					VDP_drawText("   Render raw joypad values   ", 5, 5);
+					crosshairsPosX = fix32Mul( FIX32( xVal ), FIX32(2.52));
+					crosshairsPosY = FIX32( yVal - 8 );
+					break;
+				case 1: // with lookup
+					VDP_drawText("   Render with lookup table   ", 5, 5);
+					crosshairsPosX = fix32Sub(xLookup[ xVal ], FIX32(8));
+					crosshairsPosY = fix32Sub(FIX32( yVal  ),  FIX32(8));
+					break;
+				case 2: // with lookup + offset
+					VDP_drawText("  Render with lookup + offset ", 5, 5);
+					crosshairsPosX = fix32Sub(fix32Add(xLookup[xVal], xOffset), FIX32(8));
+					crosshairsPosY = fix32Sub(fix32Add(FIX32( yVal ), yOffset), FIX32(8));
+				default:
+					break;
 			}
 		}
 
