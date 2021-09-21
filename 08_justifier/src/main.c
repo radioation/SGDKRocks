@@ -141,12 +141,12 @@ int main()
 
 
 	// check Port 2 for the Konami Justifier
-	bool menacerFound = FALSE;
+	bool justifierFound = FALSE;
 	u8 portType = JOY_getPortType(PORT_2);
 	if(portType == PORT_TYPE_JUSTIFIER )
 	{
 		JOY_setSupport(PORT_2, JOY_SUPPORT_JUSTIFIER_BLUE );
-		menacerFound = TRUE;
+		justifierFound = TRUE;
 		VDP_drawText("Justifier FOUND!", 11, 1);
 	} else {
 		VDP_drawText("Justifier NOT found.", 10, 1);
@@ -156,7 +156,7 @@ int main()
 	// Main Loop!
 	while(TRUE)
 	{
-		if( menacerFound ) {	
+		if( justifierFound ) {	
 			// get the button states		
 			u16 value = JOY_readJoypad(JOY_2);
 			if( value & BUTTON_A ) {
