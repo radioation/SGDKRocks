@@ -16,7 +16,6 @@ static fix32 yOffset = FIX32(0);
 static fix32 xLookup[ 256 ];  // full range for JOY_readJoypadX()
 
 
-
 static void calculateOffset() {
 	fix32 xTemp = FIX32(0);
 	fix32 yTemp = FIX32(0);
@@ -78,7 +77,7 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 
 static void calculateXLookup() {
   // My blue justifier appears to return 34 through 176 when I pan 
-	// across my TV screen in H32 mode.   so about 142 values.
+	// across my TV screen in H32 mode.  So about 142 values.
 
   fix32 pos = FIX32(0);
   for( int i=34; i < 176; ++i ) {
@@ -177,6 +176,8 @@ int main()
 			sprintf( message, "Justifier Values x:%d, y:%d      ", xVal, yVal );
 			VDP_drawText(message, 7, 7 );
 
+			sprintf( message, "Offset Values x:%d, y:%d         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
+			VDP_drawText(message, 7, 10 );
 
 			if( calibrateMode ) {
 				VDP_drawText("Aim at target and pull trigger", 5, 3);

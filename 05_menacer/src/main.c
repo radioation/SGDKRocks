@@ -205,6 +205,8 @@ int main()
 			sprintf( message, "Menacer Values x:%d, y:%d      ", xVal, yVal );
 			VDP_drawText(message, 8, 7 );
 
+			sprintf( message, "Offset Values x:%d, y:%d         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
+			VDP_drawText(message, 7, 10 )
 
 			if( calibrateMode ) {
 				VDP_drawText("Aim at target and pull trigger", 5, 3);
