@@ -170,6 +170,7 @@ int main()
 	} else {
 		VDP_drawText("Menacer NOT found.", 11, 1);
 	}
+	 VDP_drawText("Press C to change drawing mode", 5, 5);
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// Main Loop!
@@ -208,23 +209,23 @@ int main()
 			if( calibrateMode ) {
 				VDP_drawText("Aim at target and pull trigger", 5, 3);
 			} else {
-				VDP_drawText("                              ", 5, 3);
+				VDP_drawText("Press B to start calibration  ", 5, 3);
 			}
 
 			// set crosshairs position. Subtract 8 from each to compensate for 16x16 sprite
 			switch( crosshairsMode ) { 
 			case 0: // raw
-				VDP_drawText("   Render raw joypad values   ", 5, 5);
+				VDP_drawText("   Render raw joypad values   ", 5, 6);
 				crosshairsPosX = FIX32( xVal - 8 );
 				crosshairsPosY = FIX32( yVal - 8 );
 				break;
 			case 1: // with lookup
-				VDP_drawText("   Render with lookup table   ", 5, 5);
+				VDP_drawText("   Render with lookup table   ", 5, 6);
 				crosshairsPosX = fix32Sub(xLookup[ xVal ], FIX32(8));
 				crosshairsPosY = fix32Sub(FIX32( yVal  ),  FIX32(8));
 				break;
 			case 2: // with lookup + offset
-				VDP_drawText("  Render with lookup + offset ", 5, 5);
+				VDP_drawText("  Render with lookup + offset ", 5, 6);
 				crosshairsPosX = fix32Sub(fix32Add(xLookup[xVal], xOffset), FIX32(8));
 				crosshairsPosY = fix32Sub(fix32Add(FIX32( yVal ), yOffset), FIX32(8));
 			default:
@@ -237,8 +238,7 @@ int main()
 		SPR_setPosition( crosshairsSprite, fix32ToInt( crosshairsPosX ), fix32ToInt( crosshairsPosY ) );
 		SPR_update();
 
-		VDP_waitVSync();
-		// SYS_doVBlankProcess(); 1.60 not linking
+		SYS_doVBlankProcess(); 
 
 	}
 }
