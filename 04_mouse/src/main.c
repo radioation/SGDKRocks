@@ -8,7 +8,7 @@ int main(bool hard)
 	///////////////////////////////////////////////////////////////////////////////////
 	// Sprite Setup
 	Sprite *ufoSprite = NULL;
-	VDP_setPalette( PAL1, ufo.palette->data );
+	PAL_setPalette( PAL1, ufo_pal.data, CPU );
 	SPR_init();
 	// Sprite position 
 	fix32 posX = FIX32(154.0);
@@ -66,7 +66,7 @@ int main(bool hard)
 			// Write mouse values to the screen
 			VDP_setTextPalette(3);
 			char mouseMessage[40];
-			sprintf( mouseMessage, "Mouse Values x:%d, y:%d      ", x_mouse, y_mouse );
+			sprintf( mouseMessage, "Mouse Values x:%ld, y:%ld      ", x_mouse, y_mouse );
 			VDP_drawText(mouseMessage, 8, 10 );
 			VDP_setTextPalette(0);
 
