@@ -575,7 +575,7 @@ static void createExplosions() {
 
 
 
-int main( u16 hard ) {
+int main(bool hard) {
 
 	// clear 
 	memset( playerShots, 0, sizeof(playerShots) );

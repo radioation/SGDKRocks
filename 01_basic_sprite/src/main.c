@@ -1,7 +1,7 @@
 #include <genesis.h>
 #include "resources.h"
 
-int main(u16 hard)
+int main(bool hard)
 {
 	// set backgorund color.  
 	VDP_setBackgroundColor(0);
