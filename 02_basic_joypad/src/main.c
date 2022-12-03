@@ -108,7 +108,7 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 
 
 
-int main(u16 hard)
+int main(bool hard)
 {
   VDP_drawText("SYNCH: readJoypad()", 0, 1 );
   VDP_drawText("ASYNCH: joypadHandler()", 0, 5 );

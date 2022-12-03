@@ -1,6 +1,6 @@
 #include <genesis.h>
 
-int main(u16 hard) {
+int main(bool hard) {
 
 	// set background color to a palette color
 	// SGDK automatically sets up 4 color palettes 

@@ -93,13 +93,13 @@ static void calculateXLookup()
 	}
 }
 
-int main()
+int main(bool hard)
 {
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// Sprite Setup
 	Sprite *targetSprite = NULL;
-	VDP_setPalette(PAL1, target.palette->data);
+	PAL_setPalette(PAL1, target_pal.data, CPU);
 	SPR_init();
 
 	// crosshair is 16x16
@@ -135,9 +135,9 @@ int main()
 
 	// Set background brighter than 0.	darker backgrounds
 	// prevent Phaser from returning X, Y values.
-	VDP_setPaletteColor(15, 0x0000);
+	PAL_setColor(15, 0x0000);
 	VDP_setTextPalette(0);
-	VDP_setPaletteColor(0, RGB24_TO_VDPCOLOR(0x44aaff)); // seems to work OK
+	PAL_setColor(0, RGB24_TO_VDPCOLOR(0x44aaff)); // seems to work OK
 
 	// Asynchronous joystick handler.
 	JOY_setEventHandler(joypadHandler);
@@ -146,7 +146,32 @@ int main()
 	JOY_setSupport(PORT_2, JOY_SUPPORT_PHASER);
 
 
+	///////////////////////////////////////////////////////////////////////////////////
+	// Draw text
 	VDP_drawText("Press C to change drawing mode", 5, 5);
+	char message[40];
+	// use intToStr() to print row numbers
+	for( s32 i=0; i < 28; ++i ) {
+		intToStr( i, message, 1 );
+		VDP_drawText( message, 0, i );
+	}
+
+	// use uintToStr() to print column numbers
+	for( u32 i=0; i < 40; ++i ) {
+		u32 tmp = i%10;
+		uintToStr( tmp, message, 1 );
+		// draw ones place
+		VDP_drawText( message, i, 0 );
+		// draw tens place
+		if( i > 0 ) {
+			if( tmp == 0 ) {
+				uintToStr( i/10, message, 1 );
+				VDP_drawText( message, i, 1 );
+			}
+		}
+	}
+
+
 	///////////////////////////////////////////////////////////////////////////////////
 	// Main Loop!
 	while (TRUE)
@@ -171,7 +196,7 @@ int main()
 		char message[40];
 		sprintf(message, "Phaser Values x:%d, y:%d      ", xVal, yVal);
 		VDP_drawText(message, 7, 7);
-		sprintf( message, "Offset Values x:%d, y:%d         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
+		sprintf( message, "Offset Values x:%ld, y:%ld         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
 		VDP_drawText(message, 7, 10);
 		if (calibrateMode)
 		{

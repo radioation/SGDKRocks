@@ -1,7 +1,7 @@
 #include <genesis.h>
 #include "resources.h"
 
-int main(u16 hard)
+int main(bool hard)
 {
 	// set backgorund color.  
 	VDP_setBackgroundColor(0);
@@ -11,8 +11,8 @@ int main(u16 hard)
 	Sprite *rockSprite = NULL;
 
 	// load the palette of the ship resource
-	VDP_setPalette( PAL1, ship.palette->data );
-	VDP_setPalette( PAL2, rock.palette->data );
+	PAL_setPalette( PAL1, ship_pal.data, CPU );
+	PAL_setPalette( PAL2, rock_pal.data, CPU );
 
 	// Initialize the Sprite engine
 	SPR_init();
