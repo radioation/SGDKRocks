@@ -9,3 +9,8 @@ SPRITE explosion "sprites/explosion.png" 4 4 NONE 0
 
 WAV  laser_snd "sounds/laser.wav"  4
 WAV  explosion_snd "sounds/explosion.wav"  4
+
+PALETTE  shot_pal "sprites/shot_sheet.png" 
+PALETTE  plane_pal "imgs/plane_a.png" 
+PALETTE  ship_pal "sprites/ship.png"
+PALETTE  rock_pal "sprites/rock.png" 
