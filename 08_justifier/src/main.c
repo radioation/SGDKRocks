@@ -91,11 +91,11 @@ static void calculateXLookup() {
 			
 int main(bool hard)
 {
-
 	///////////////////////////////////////////////////////////////////////////////////
 	// Sprite Setup
 	Sprite *targetSprite = NULL;
-	VDP_setPalette( PAL1, target.palette->data );
+	PAL_setPalette( PAL1, tgt_palette.data, CPU);
+
 	SPR_init();
 
 	// crosshair is 16x16
@@ -131,9 +131,9 @@ int main(bool hard)
 
 	// Set background brighter than 0.	darker backgrounds
 	// prevent Justifier from returning X, Y values.
-	VDP_setPaletteColor(15, 0x0000);
+	PAL_setColor(15, 0x0000);
 	VDP_setTextPalette(0);
-	VDP_setPaletteColor(0, RGB24_TO_VDPCOLOR(0x4488ff)); // seems to work OK
+	PAL_setColor(0, RGB24_TO_VDPCOLOR(0x4488ff)); // seems to work OK
 
 	// Asynchronous joystick handler. 
 	JOY_setEventHandler (joypadHandler );
@@ -176,7 +176,7 @@ int main(bool hard)
 			sprintf( message, "Justifier Values x:%d, y:%d      ", xVal, yVal );
 			VDP_drawText(message, 7, 7 );
 
-			sprintf( message, "Offset Values x:%d, y:%d         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
+			sprintf( message, "Offset Values x:%ld, y:%ld         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
 			VDP_drawText(message, 7, 10 );
 
 			if( calibrateMode ) {
