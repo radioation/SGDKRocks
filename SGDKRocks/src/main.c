@@ -10,19 +10,21 @@
 #define PLAYER_FRAME_COUNT  16
 #define MAX_ROTATION_INDEX  FIX32(15)
 #define MIN_ROTATION_INDEX  FIX32(0)
-#define PLAYER_WIDTH        24
-#define PLAYER_HEIGHT       24
+#define PLAYER_WIDTH        16
+#define PLAYER_HEIGHT       16
 #define PLAYER_SHOT_WIDTH   8 
 #define PLAYER_SHOT_HEIGHT  8 
 #define MAX_PLAYER_SHOTS    4
 
 
 // enemy constants
-#define MAX_ENEMIES         4
-#define MAX_ENEMY_SHOTS     8
+#define MAX_ENEMIES         2
+#define MAX_ENEMY_SHOTS     3
 
-#define MAX_ROCKS           10
+#define MAX_ROCKS           5 
+#define MAX_MID_ROCKS       10 
 #define MAX_SMALL_ROCKS     20
+#define MAX_XS_ROCKS        30
 
 #define MAX_EXPLOSIONS      6
 
@@ -72,7 +74,9 @@ CP_SPRITE playerShots[ MAX_PLAYER_SHOTS ];
 CP_SPRITE enemies[MAX_ENEMIES];
 CP_SPRITE enemyShots[MAX_ENEMY_SHOTS];
 CP_SPRITE rocks[MAX_ROCKS];
+CP_SPRITE midRocks[MAX_MID_ROCKS];
 CP_SPRITE smallRocks[MAX_SMALL_ROCKS];
+CP_SPRITE xsRocks[MAX_XS_ROCKS];
 
 CP_SPRITE explosions[MAX_EXPLOSIONS];
 u16 currentExplosion = 0;
@@ -243,7 +247,7 @@ void update() {
 
 
 
-	// rocks
+  // COPY PASTE IS THE WORST FORM OF REUSE:   MOVE TO A GENERIC GameEntity struct next 
 	for( u16 i=0; i < MAX_ROCKS; ++i ) {
 		if( rocks[i].active == TRUE ) {
 			rocks[i].pos_x +=  rocks[i].vel_x;
@@ -267,6 +271,28 @@ void update() {
 		}
 	}
 
+	for( u16 i=0; i < MAX_ROCKS; ++i ) {
+		if( midRocks[i].active == TRUE ) {
+			midRocks[i].pos_x +=  midRocks[i].vel_x;
+			if( midRocks[i].pos_x < FIX32(-32) ) { midRocks[i].pos_x = FIX32(MAP_WIDTH);} 
+			else if( midRocks[i].pos_x >FIX32(MAP_WIDTH) ) { midRocks[i].pos_x = FIX32(-32);} 
+
+			midRocks[i].pos_y +=  midRocks[i].vel_y;
+			if( midRocks[i].pos_y < FIX32(-32) ) { midRocks[i].pos_y = FIX32(MAP_HEIGHT);} 
+			else if( midRocks[i].pos_y >FIX32(MAP_HEIGHT)  ) { midRocks[i].pos_y = FIX32(-32);} 
+
+			s16 x = fix32ToInt(midRocks[i].pos_x) - camPosX;	
+			s16 y = fix32ToInt(midRocks[i].pos_y) - camPosY;	
+			if( x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT ) {
+				SPR_setVisibility( midRocks[i].sprite, VISIBLE);
+				SPR_setPosition(midRocks[i].sprite, fix32ToInt(midRocks[i].pos_x) - camPosX, fix32ToInt(midRocks[i].pos_y) - camPosY );
+			} else {
+				SPR_setVisibility( midRocks[i].sprite, HIDDEN);
+			}
+		} else {
+			SPR_setVisibility( midRocks[i].sprite, HIDDEN);
+		}
+	}
 
 	for( u16 i=0; i < MAX_SMALL_ROCKS; ++i ) {
 		if( smallRocks[i].active == TRUE ) {
@@ -288,6 +314,29 @@ void update() {
 			}
 		} else {
 			SPR_setVisibility( smallRocks[i].sprite, HIDDEN);
+		}
+	}
+
+	for( u16 i=0; i < MAX_SMALL_ROCKS; ++i ) {
+		if( xsRocks[i].active == TRUE ) {
+			xsRocks[i].pos_x +=  xsRocks[i].vel_x;
+			if( xsRocks[i].pos_x < FIX32(-32) ) { xsRocks[i].pos_x = FIX32(MAP_WIDTH);} 
+			else if( xsRocks[i].pos_x >FIX32(MAP_WIDTH) ) { xsRocks[i].pos_x = FIX32(-32);} 
+
+			xsRocks[i].pos_y +=  xsRocks[i].vel_y;
+			if( xsRocks[i].pos_y < FIX32(-32) ) { xsRocks[i].pos_y = FIX32(MAP_HEIGHT);} 
+			else if( xsRocks[i].pos_y >FIX32(MAP_HEIGHT)  ) { xsRocks[i].pos_y = FIX32(-32);} 
+
+			s16 x = fix32ToInt(xsRocks[i].pos_x) - camPosX;	
+			s16 y = fix32ToInt(xsRocks[i].pos_y) - camPosY;	
+			if( x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT ) {
+				SPR_setVisibility( xsRocks[i].sprite, VISIBLE);
+				SPR_setPosition(xsRocks[i].sprite, fix32ToInt(xsRocks[i].pos_x) - camPosX, fix32ToInt(xsRocks[i].pos_y) - camPosY );
+			} else {
+				SPR_setVisibility( xsRocks[i].sprite, HIDDEN);
+			}
+		} else {
+			SPR_setVisibility( xsRocks[i].sprite, HIDDEN);
 		}
 	}
 
@@ -418,6 +467,45 @@ static void checkCollisions() {
 			}
 		}
 	}
+
+	for( u16 i=0; i < MAX_ROCKS; ++i ) {
+		if( midRocks[i].active == TRUE ) {
+			// check if ship has hit
+			if( (midRocks[i].pos_x + midRocks[i].hitbox_x1) < (player.pos_x + player.hitbox_x2) &&
+					(midRocks[i].pos_x + midRocks[i].hitbox_x2) > (player.pos_x + player.hitbox_x1) &&
+					(midRocks[i].pos_y + midRocks[i].hitbox_y1) < (player.pos_y + player.hitbox_y2) &&
+					(midRocks[i].pos_y + midRocks[i].hitbox_y2) > (player.pos_y + player.hitbox_y1)  )
+			{
+				midRocks[i].hitpoints -=1;
+				if( midRocks[i].hitpoints == 0 ) {
+					midRocks[i].active = FALSE;
+					SPR_setVisibility( midRocks[i].sprite, HIDDEN);
+					addExplosion(  midRocks[i].pos_x, midRocks[i].pos_y );
+				}
+				//SPR_setVisibility( player.sprite, HIDDEN );
+			}
+
+			for( u16 j=0; j < MAX_PLAYER_SHOTS; ++j ) {
+				if(
+						playerShots[j].active == TRUE &&
+						(midRocks[i].pos_x + midRocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX32(4)) &&
+						(midRocks[i].pos_x + midRocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX32(4)) &&
+						(midRocks[i].pos_y + midRocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX32(4)) &&
+						(midRocks[i].pos_y + midRocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX32(4))  )
+				{
+					midRocks[i].hitpoints -=1;
+					if( midRocks[i].hitpoints == 0 ) {
+						midRocks[i].active = FALSE;
+						SPR_setVisibility( midRocks[i].sprite, HIDDEN);
+					}
+					playerShots[j].active = FALSE;
+					SPR_setVisibility( playerShots[j].sprite, HIDDEN);
+					addExplosion(  midRocks[i].pos_x, midRocks[i].pos_y );
+				}
+			}
+		}
+	}
+
 	for( u16 i=0; i < MAX_SMALL_ROCKS; ++i ) {
 		if( smallRocks[i].active == TRUE ) {
 			// check if ship has hit
@@ -455,6 +543,46 @@ static void checkCollisions() {
 			}
 		}
 	}
+
+	for( u16 i=0; i < MAX_SMALL_ROCKS; ++i ) {
+		if( xsRocks[i].active == TRUE ) {
+			// check if ship has hit
+			if( (xsRocks[i].pos_x + xsRocks[i].hitbox_x1) < (player.pos_x + player.hitbox_x2) &&
+					(xsRocks[i].pos_x + xsRocks[i].hitbox_x2) > (player.pos_x + player.hitbox_x1) &&
+					(xsRocks[i].pos_y + xsRocks[i].hitbox_y1) < (player.pos_y + player.hitbox_y2) &&
+					(xsRocks[i].pos_y + xsRocks[i].hitbox_y2) > (player.pos_y + player.hitbox_y1)  )
+			{
+				xsRocks[i].hitpoints -=1;
+				if( xsRocks[i].hitpoints == 0 ) {
+					xsRocks[i].active = FALSE;
+					SPR_setVisibility( xsRocks[i].sprite, HIDDEN);
+					addExplosion(  xsRocks[i].pos_x, xsRocks[i].pos_y );
+				}
+				//SPR_setVisibility( player.sprite, HIDDEN );
+			}
+
+			for( u16 j=0; j < MAX_PLAYER_SHOTS; ++j ) {
+				if(
+						playerShots[j].active == TRUE &&
+						(xsRocks[i].pos_x + xsRocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX32(4)) &&
+						(xsRocks[i].pos_x + xsRocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX32(4)) &&
+						(xsRocks[i].pos_y + xsRocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX32(4)) &&
+						(xsRocks[i].pos_y + xsRocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX32(4))  )
+				{
+					xsRocks[i].hitpoints -=1;
+					if( xsRocks[i].hitpoints == 0 ) {
+						xsRocks[i].active = FALSE;
+						SPR_setVisibility( xsRocks[i].sprite, HIDDEN);
+					}
+					playerShots[j].active = FALSE;
+					SPR_setVisibility( playerShots[j].sprite, HIDDEN);
+					addExplosion(  xsRocks[i].pos_x, xsRocks[i].pos_y );
+				}
+			}
+		}
+	}
+
+
 }
 
 
@@ -489,7 +617,7 @@ void createRocks() {
 		rocks[i].pos_x = FIX32(random()%(MAP_WIDTH-32) + i );
 		rocks[i].pos_y = FIX32(random()%(MAP_HEIGHT-32)+ i);
 		u16 rot = random() % 16;
-		fix32 vel = FIX32(0.8);
+		fix32 vel = FIX32(0.3);
 		rocks[i].vel_x = fix32Mul( vel, deltaX[rot]  );
 		rocks[i].vel_y = fix32Mul( vel, deltaY[rot]  );
 		rocks[i].active = TRUE;
@@ -504,14 +632,33 @@ void createRocks() {
 	}
 }
 
+// COPY PASTE IS THE WORST FORM OF REUSE:   MOVE TO A GENERIC GameEntity struct next 
+void createMidRocks() {
+	for( u16 i=0; i < MAX_MID_ROCKS; ++i ) {
+		midRocks[i].pos_x = FIX32(random()%(MAP_WIDTH-32) + i );
+		midRocks[i].pos_y = FIX32(random()%(MAP_HEIGHT-32)+ i);
+		u16 rot = random() % 16;
+		fix32 vel = FIX32(0.5);
+		midRocks[i].vel_x = fix32Mul( vel, deltaX[rot]  );
+		midRocks[i].vel_y = fix32Mul( vel, deltaY[rot]  );
+		midRocks[i].active = TRUE;
+		midRocks[i].hitbox_x1 = FIX32(2);
+		midRocks[i].hitbox_y1 = FIX32(2);
+		midRocks[i].hitbox_x2 = FIX32(22);
+		midRocks[i].hitbox_y2 = FIX32(22);
+		midRocks[i].hitpoints = 2;
+
+		midRocks[i].sprite = SPR_addSprite( &mid_rock, -32, -32, TILE_ATTR( PAL3, 0, FALSE, FALSE ));
+		SPR_setAnim( midRocks[i].sprite, i%4 );
+	}
+}
+
 void createSmallRocks() {
-
-
 	for( u16 i=0; i < MAX_SMALL_ROCKS; ++i ) {
 		smallRocks[i].pos_x = FIX32(random()%(MAP_WIDTH-32) + i );
 		smallRocks[i].pos_y = FIX32(random()%(MAP_HEIGHT-32)+ i);
 		u16 rot = random() % 16;
-		fix32 vel = FIX32(1.4);
+		fix32 vel = FIX32(0.7);
 		smallRocks[i].vel_x = fix32Mul( vel, deltaX[rot]  );
 		smallRocks[i].vel_y = fix32Mul( vel, deltaY[rot]  );
 		smallRocks[i].active = TRUE;
@@ -523,6 +670,26 @@ void createSmallRocks() {
 
 		smallRocks[i].sprite = SPR_addSprite( &small_rock, -32, -32, TILE_ATTR( PAL3, 0, FALSE, FALSE ));
 		SPR_setAnim( smallRocks[i].sprite, i%4 );
+	}
+}
+
+void createExtraSmallRocks() {
+	for( u16 i=0; i < MAX_XS_ROCKS; ++i ) {
+		xsRocks[i].pos_x = FIX32(random()%(MAP_WIDTH-32) + i );
+		xsRocks[i].pos_y = FIX32(random()%(MAP_HEIGHT-32)+ i);
+		u16 rot = random() % 16;
+		fix32 vel = FIX32(0.9);
+		xsRocks[i].vel_x = fix32Mul( vel, deltaX[rot]  );
+		xsRocks[i].vel_y = fix32Mul( vel, deltaY[rot]  );
+		xsRocks[i].active = TRUE;
+		xsRocks[i].hitbox_x1 = FIX32(0);
+		xsRocks[i].hitbox_y1 = FIX32(0);
+		xsRocks[i].hitbox_x2 = FIX32(8);
+		xsRocks[i].hitbox_y2 = FIX32(8);
+		xsRocks[i].hitpoints = 1;
+
+		xsRocks[i].sprite = SPR_addSprite( &xs_rock, -32, -32, TILE_ATTR( PAL3, 0, FALSE, FALSE ));
+		SPR_setAnim( xsRocks[i].sprite, i%4 );
 	}
 }
 
@@ -610,7 +777,7 @@ int main(bool hard) {
 
 
 	// Init sprite engine with defaults
-	SPR_init();
+	SPR_initEx(900);
 	player.pos_x = FIX32( MAP_WIDTH/2 - 12 );
 	player.pos_y = FIX32( MAP_HEIGHT/2 - 12 );
 	player.sprite = SPR_addSprite( &ship, fix32ToInt(player.pos_x) - camPosX, fix32ToInt(player.pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE ));
@@ -658,7 +825,9 @@ int main(bool hard) {
 	createExplosions();
 	createPlayerShots();
 	createRocks();
+	createMidRocks();
 	createSmallRocks();
+	createExtraSmallRocks();
 	createEnemies();
 
 	JOY_setEventHandler( &inputCallback );
