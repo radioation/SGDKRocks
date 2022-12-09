@@ -575,7 +575,7 @@ static void createExplosions() {
 
 
 
-int main( u16 hard ) {
+int main(bool hard) {
 
 	// clear 
 	memset( playerShots, 0, sizeof(playerShots) );
@@ -593,13 +593,13 @@ int main( u16 hard ) {
 	// Screen init
 	VDP_setScreenWidth320();
 
-	VDP_setPalette( PAL0, shot.palette->data);
-	VDP_setPalette( PAL1, plane_a_map.palette->data);
-	VDP_setPalette( PAL2, ship.palette->data );
-	VDP_setPalette( PAL3, rock.palette->data );
+	PAL_setPalette( PAL0, shot_pal.data, CPU);
+	PAL_setPalette( PAL1, plane_pal.data, CPU);
+	PAL_setPalette( PAL2, ship_pal.data, CPU);
+	PAL_setPalette( PAL3, rock_pal.data, CPU);
 
 	// Load the plane tiles into VRAM
-	int ind = TILE_USERINDEX;
+	int ind = TILE_USER_INDEX;
 	VDP_loadTileSet( &plane_a_tileset, ind, DMA );
 
 	// init background map

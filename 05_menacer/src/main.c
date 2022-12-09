@@ -107,13 +107,13 @@ static void calculateXLookup() {
 }
 
 
-int main()
+int main(bool hard)
 {
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// Sprite Setup
 	Sprite *targetSprite = NULL;
-	VDP_setPalette( PAL1, target.palette->data );
+	PAL_setPalette( PAL1, target_pal.data, CPU );
 	SPR_init();
 
 	// crosshair is 16x16
@@ -151,9 +151,11 @@ int main()
 	// prevents menacer from returning X, Y values.
 	//VDP_setBackgroundColor( 4 );
 
-    VDP_setPaletteColor(15, 0x0000);
+    //VDP_setPaletteColor(15, 0x0000);
+		PAL_setColor(15, 0x0000);
     VDP_setTextPalette(0);
-    VDP_setPaletteColor(0, 0x0844);
+    //VDP_setPaletteColor(0, 0x0844);
+    PAL_setColor(0, 0x0844);
 
 	// Asynchronous joystick handler. 
 	JOY_setEventHandler (joypadHandler );
@@ -205,8 +207,8 @@ int main()
 			sprintf( message, "Menacer Values x:%d, y:%d      ", xVal, yVal );
 			VDP_drawText(message, 8, 7 );
 
-			sprintf( message, "Offset Values x:%d, y:%d         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
-			VDP_drawText(message, 7, 10 )
+			sprintf( message, "Offset Values x:%ld, y:%ld         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
+			VDP_drawText(message, 7, 10 );
 
 			if( calibrateMode ) {
 				VDP_drawText("Aim at target and pull trigger", 5, 3);
