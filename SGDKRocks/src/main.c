@@ -171,7 +171,7 @@ CP_SPRITE player;
 fix32 playerRotation;
 bool doPlayerUpdate;
 fix32 acc = FIX32(0.10);
-fix32 dec = FIX32(0.01);
+u8 doDec = 0;
 fix32 deltaX[PLAYER_FRAME_COUNT];
 fix32 deltaY[PLAYER_FRAME_COUNT];
 CP_SPRITE playerShots[MAX_PLAYER_SHOTS];
@@ -328,9 +328,9 @@ void handleInput()
 				int rot = fix32ToInt(playerRotation);
 				fix32 temp_x = fix32Add(player.vel_x, fix32Mul(acc, deltaX[rot]));
 				fix32 temp_y = fix32Add(player.vel_y, fix32Mul(acc, deltaY[rot]));
-				fix32 speed = fix32Add(fix32Mul(temp_x, temp_x), fix32Mul(temp_y, temp_y));
+				fix32 speedsqr = fix32Add(fix32Mul(temp_x, temp_x), fix32Mul(temp_y, temp_y));
 
-				if (speed < FIX32(1.44))
+				if (speedsqr < FIX32(4))
 				{ // square of 1.2 == 1.44
 						player.vel_x = temp_x;
 						player.vel_y = temp_y;
@@ -338,30 +338,32 @@ void handleInput()
 				else
 				{
 						// get direction and rescale speed for it.
-						KLog_F2x(4, "y: ", temp_y, "x: ", temp_x);
 						u16 dir = ApproxAtan2(temp_y, temp_x);
-						kprintf("dir : %d", dir);
 						fix32 s = sinFix32(dir);
 						fix32 c = cosFix32(dir);
-						KLog_F2x(4, "SIN ", s, " COS ", c);
-						player.vel_x = fix32Mul(FIX32(1.2),c);
-						player.vel_y = fix32Mul(FIX32(1.2),s);
+						player.vel_x = fix32Mul(FIX32(2), c);
+						player.vel_y = fix32Mul(FIX32(2), s);
 				}
 		}
 		else
 		{
-				// doPlayerUpdate = FALSE;
-				//  cheat the math a bit to avoid having to use trig.
-				/*
-				player.vel_x = fix32Sub( player.vel_x, fix32Mul(  dec, player.vel_x));
-				if( abs( player.vel_x ) < FIX32(0.002)) {
-					player.vel_x = FIX32(0.0);
+			++doDec;
+			if( doDec == 10) {
+				doDec = 0;
+				fix32 speedsqr = fix32Add(fix32Mul(player.vel_x, player.vel_x), fix32Mul(player.vel_y, player.vel_y));
+				u16 dir = ApproxAtan2(player.vel_y, player.vel_x);
+				fix32 s = sinFix32(dir);
+				fix32 c = cosFix32(dir);
+				fix16 speed = fix16Sqrt( fix32ToFix16(speedsqr));
+        speed = fix16Sub( speed, FIX16(0.1));
+				if( speed < FIX16(0.1)){
+					player.vel_x = FIX32(0);
+					player.vel_y = FIX32(0);
+				} else {
+					player.vel_x = fix32Mul(fix16ToFix32(speed), c);
+					player.vel_y = fix32Mul(fix16ToFix32(speed), s);
 				}
-				player.vel_y = fix32Sub( player.vel_y, fix32Mul(  dec, player.vel_y));
-				if( abs( player.vel_y ) < FIX32(0.002)) {
-					player.vel_y = FIX32(0.0);
-				}
-		*/
+			}
 		}
 }
 
