@@ -2,6 +2,50 @@
 #include "resources.h"
 
 
+static u16 palette[32];
+const u16 palette_flash[32] =
+{
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE
+};
+static u8 flashScreen = 0;
+static bool useFlash = FALSE;
+
+
+
 u16 crosshairsMode = 0;  // 0 raw values, 1 with lookup,  2 with lookup and calibration offset
 static bool calibrateMode = FALSE;
 #define MAX_VALS 10
@@ -48,11 +92,16 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 				crosshairsMode = 0;
 			}
 
+		} else if( changed == BUTTON_Z && joypadState == BUTTON_Z ) {
+		  // Z - Toggle screen flash
+			useFlash = !useFlash;
 		}
+
 	}else if( joypadId == JOY_2  ) {
 
 		// A
 		if( changed == BUTTON_A && joypadState == BUTTON_A) {
+			flashScreen = 3;
 			if( calibrateMode ) {
 				// get reading
 				s16 xVal = JOY_readJoypadX(JOY_2);
@@ -125,15 +174,19 @@ int main(bool hard)
 				));
 
 	///////////////////////////////////////////////////////////////////////////////////
-	// Justifier Setup
-	//
-	calculateXLookup();
-
+	// Color setup
 	// Set background brighter than 0.	darker backgrounds
 	// prevent Justifier from returning X, Y values.
 	PAL_setColor(15, 0x0000);
 	VDP_setTextPalette(0);
 	PAL_setColor(0, RGB24_TO_VDPCOLOR(0x4488ff)); // seems to work OK
+	PAL_getColors( 0, &palette[0], 16);
+	memcpy(&palette[16], tgt_palette.data, 16 * 2);
+
+	///////////////////////////////////////////////////////////////////////////////////
+	// Justifier Setup
+	//
+	calculateXLookup();
 
 	// Asynchronous joystick handler. 
 	JOY_setEventHandler (joypadHandler );
@@ -156,6 +209,20 @@ int main(bool hard)
 	// Main Loop!
 	while(TRUE)
 	{
+
+		if ( useFlash && flashScreen > 0)
+		{
+			if (flashScreen == 3)
+			{
+				PAL_setColors(0, palette_flash, 32, CPU);
+			}
+			else if (flashScreen == 1)
+			{
+				PAL_setColors(0, palette, 32, CPU);
+			}
+			--flashScreen;
+		}
+
 		if( justifierFound ) {	
 			// get the button states		
 			u16 value = JOY_readJoypad(JOY_2);

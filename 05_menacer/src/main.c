@@ -2,6 +2,49 @@
 #include "resources.h"
 
 
+static u16 palette[32];
+const u16 palette_flash[32] =
+{
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE,
+    0x0EEE
+};
+static u8 flashScreen = 0;
+static bool useFlash = FALSE;
+
+
 u16 crosshairsMode = 0;  // 0 raw values, 1 with lookup,  2 with lookup and calibration offset
 static bool calibrateMode = FALSE;
 #define MAX_VALS 10
@@ -42,6 +85,7 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 
 		// A
 		if( changed == BUTTON_A && joypadState == BUTTON_A) {
+			flashScreen = 3;
 			if( calibrateMode ) {
 				// get reading
 				s16 xVal = JOY_readJoypadX(JOY_2);
@@ -74,7 +118,12 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 				crosshairsMode = 0;
 			}
 		}
-
+	} else {
+		// joypad 1 use Z
+		// Z - Toggle screen flash
+		if( changed == BUTTON_Z && joypadState == BUTTON_Z ) {
+			useFlash = !useFlash;
+		}
 
 	}
 }
@@ -143,95 +192,123 @@ int main(bool hard)
 				));
 
 	///////////////////////////////////////////////////////////////////////////////////
+	// palette Setup
+	// Set background brighter than 0.	Dark backgrounds
+	// prevents menacer from returning X, Y values.
+	PAL_setColor(15, 0x0000);
+	VDP_setTextPalette(0);
+	PAL_setColor(0, 0x0844);
+	PAL_getColors( 0, &palette[0], 16);
+	memcpy(&palette[16], target_pal.data, 16 * 2);
+
+	///////////////////////////////////////////////////////////////////////////////////
 	// Menacer Setup
 	// create lookup table
 	calculateXLookup();
 
-	// Set background brighter than 0.	Black background
-	// prevents menacer from returning X, Y values.
-	//VDP_setBackgroundColor( 4 );
-
-    //VDP_setPaletteColor(15, 0x0000);
-		PAL_setColor(15, 0x0000);
-    VDP_setTextPalette(0);
-    //VDP_setPaletteColor(0, 0x0844);
-    PAL_setColor(0, 0x0844);
-
-	// Asynchronous joystick handler. 
-	JOY_setEventHandler (joypadHandler );
-
+	// Asynchronous joystick handler.
+	JOY_setEventHandler(joypadHandler);
 
 	// check Port 2 for the Sega Menacer
 	bool menacerFound = FALSE;
 	u8 portType = JOY_getPortType(PORT_2);
-	if(portType == PORT_TYPE_MENACER )
+	if (portType == PORT_TYPE_MENACER)
 	{
 		JOY_setSupport(PORT_2, JOY_SUPPORT_MENACER);
 		menacerFound = TRUE;
 		VDP_drawText("Menacer FOUND!", 13, 1);
-	} else {
+	}
+	else
+	{
 		VDP_drawText("Menacer NOT found.", 11, 1);
 	}
-	 VDP_drawText("Press C to change drawing mode", 5, 5);
+	VDP_drawText("Press C to change drawing mode", 5, 5);
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// Main Loop!
-	while(TRUE)
+	while (TRUE)
 	{
-		if( menacerFound ) {	
-			// get the button states		
+		if ( useFlash && flashScreen > 0)
+		{
+			if (flashScreen == 3)
+			{
+				PAL_setColors(0, palette_flash, 32, CPU);
+			}
+			else if (flashScreen == 1)
+			{
+				PAL_setColors(0, palette, 32, CPU);
+			}
+			--flashScreen;
+		}
+
+		if (menacerFound)
+		{
+			// get the button states
 			u16 value = JOY_readJoypad(JOY_2);
-			if( value & BUTTON_A ) {
+			if (value & BUTTON_A)
+			{
 				VDP_drawText("A", 18, 9);
-			} else {
+			}
+			else
+			{
 				VDP_drawText(" ", 18, 9);
 			}
 
-			if( value & BUTTON_B ) {
+			if (value & BUTTON_B)
+			{
 				VDP_drawText("B", 20, 9);
-			} else {
+			}
+			else
+			{
 				VDP_drawText(" ", 20, 9);
 			}
 
-			if( value & BUTTON_C ) {
+			if (value & BUTTON_C)
+			{
 				VDP_drawText("C", 22, 9);
-			} else {
+			}
+			else
+			{
 				VDP_drawText(" ", 22, 9);
 			}
 
 			// The menacer appears to return 8-bit values (0 to 255)
-			// if both values are -1, the gun is aiming off screen.	
+			// if both values are -1, the gun is aiming off screen.
 			s16 xVal = JOY_readJoypadX(JOY_2);
 			s16 yVal = JOY_readJoypadY(JOY_2);
 			char message[40];
-			sprintf( message, "Menacer Values x:%d, y:%d      ", xVal, yVal );
-			VDP_drawText(message, 8, 7 );
+			sprintf(message, "Menacer Values x:%d, y:%d      ", xVal, yVal);
+			VDP_drawText(message, 8, 7);
 
-			sprintf( message, "Offset Values x:%ld, y:%ld         ", fix32ToInt(xOffset),fix32ToInt( yOffset) );
-			VDP_drawText(message, 7, 10 );
+			sprintf(message, "Offset Values x:%ld, y:%ld         ", fix32ToInt(xOffset), fix32ToInt(yOffset));
+			VDP_drawText(message, 7, 10);
 
-			if( calibrateMode ) {
+			if (calibrateMode)
+			{
 				VDP_drawText("Aim at target and pull trigger", 5, 3);
-			} else {
+			}
+			else
+			{
 				VDP_drawText("Press B to start calibration  ", 5, 3);
 			}
 
 			// set crosshairs position. Subtract 8 from each to compensate for 16x16 sprite
-			switch( crosshairsMode ) { 
+			switch (crosshairsMode)
+			{
 			case 0: // raw
 				VDP_drawText("   Render raw joypad values   ", 5, 6);
-				crosshairsPosX = FIX32( xVal - 8 );
-				crosshairsPosY = FIX32( yVal - 8 );
+				crosshairsPosX = FIX32(xVal - 8);
+				crosshairsPosY = FIX32(yVal - 8);
 				break;
 			case 1: // with lookup
 				VDP_drawText("   Render with lookup table   ", 5, 6);
-				crosshairsPosX = fix32Sub(xLookup[ xVal ], FIX32(8));
-				crosshairsPosY = fix32Sub(FIX32( yVal  ),  FIX32(8));
+				crosshairsPosX = fix32Sub(xLookup[xVal], FIX32(8));
+				crosshairsPosY = fix32Sub(FIX32(yVal), FIX32(8));
 				break;
 			case 2: // with lookup + offset
 				VDP_drawText("  Render with lookup + offset ", 5, 6);
 				crosshairsPosX = fix32Sub(fix32Add(xLookup[xVal], xOffset), FIX32(8));
-				crosshairsPosY = fix32Sub(fix32Add(FIX32( yVal ), yOffset), FIX32(8));
+				crosshairsPosY = fix32Sub(fix32Add(FIX32(yVal), yOffset), FIX32(8));
 			default:
 				break;
 			}
@@ -239,11 +316,9 @@ int main(bool hard)
 
 		// Set the Sprite Positions.
 		// SPR_setPosition( targetSprite, fix32ToInt( targetPosX ), fix32ToInt( targetPosY ) );
-		SPR_setPosition( crosshairsSprite, fix32ToInt( crosshairsPosX ), fix32ToInt( crosshairsPosY ) );
+		SPR_setPosition(crosshairsSprite, fix32ToInt(crosshairsPosX), fix32ToInt(crosshairsPosY));
 		SPR_update();
 
-		SYS_doVBlankProcess(); 
-
+		SYS_doVBlankProcess();
 	}
 }
-
