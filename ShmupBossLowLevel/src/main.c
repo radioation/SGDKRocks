@@ -96,8 +96,8 @@ typedef struct {
 
   bool active;
 
-  u16 frameSize; 
-  u16 frame; 
+  s16 frameSize; 
+  s16 tileIndex; 
 
 } CP_SPRITE;
 
@@ -109,9 +109,9 @@ typedef struct {
 #define PLAYER_SHOT_HEIGHT  8
 #define MAX_PLAYER_SHOTS    12 
 
-#define MAX_BOSS_SHOTS      12
+#define MAX_BOSS_SHOTS      6 
 
-#define MAX_EXPLOSIONS      12
+#define MAX_EXPLOSIONS      10
 
 #define LEFT_EDGE  0
 #define RIGHT_EDGE  320
@@ -155,24 +155,6 @@ s16 yLowerOffset = -10;
 s16 yLowerOffsetDir = 1;
 
 
-static void createBossShots() {
-  s16 xpos = -16;
-  s16 ypos = 230;
-
-  for( u16 i=0; i < MAX_BOSS_SHOTS; ++i ) {
-    bossShots[i].pos_x = xpos;
-    bossShots[i].pos_y = ypos;
-    bossShots[i].vel_x = 0;
-    bossShots[i].vel_y = 0;
-    bossShots[i].active = FALSE;
-    bossShots[i].hb.x1 = 0;
-    bossShots[i].hb.y1 = 0;
-    bossShots[i].hb.x2 = 8;
-    bossShots[i].hb.y2 = 8;
-    bossShots[i].frameSize = 1;
-  }
-}
-
 static void addExplosion( s16 pos_x, s16 pos_y ) {
   if( explosions[ currentExplosion ].active == FALSE ){
     // use it
@@ -180,7 +162,7 @@ static void addExplosion( s16 pos_x, s16 pos_y ) {
     explosions[currentExplosion].pos_y  = pos_y;
 
     explosions[currentExplosion].active = TRUE;
-    explosions[currentExplosion].frame = 0;
+    explosions[currentExplosion].tileIndex = 0;
     //SPR_setVisibility( explosions[currentExplosion].sprite, VISIBLE);
     //SPR_setPosition( explosions[currentExplosion].sprite,fix16ToInt(explosions[
     //currentExplosion].pos_x),fix16ToInt(explosions[currentExplosion].pos_y));
@@ -400,9 +382,9 @@ static void update() {
   // Explosions /////////////////////////////////////////////
   for( u16 i=0; i < MAX_EXPLOSIONS; ++i ) {
     if( explosions[i].active == TRUE ) {
-      explosions[i].frame += 1;
-      if( explosions[i].frame < 6 ) {
-        //SPR_setFrame( explosions[i].sprite, explosions[i].frame );
+      explosions[i].tileIndex += explosions[i].frameSize;
+      if( explosions[i].tileIndex < 6 ) {
+        //SPR_setFrame( explosions[i].sprite, explosions[i].tileIndex );
       }
       else {
         explosions[i].active = FALSE;
@@ -549,7 +531,37 @@ static void createShipShots() {
 
 }
 
-static void createExplosions() {
+
+static void setupPlayer() {
+  player.pos_x = 144;
+  player.pos_y = 160;
+  player.vel_x = 0;
+  player.vel_y = 0;
+  player.hb.x1 = 2;
+  player.hb.y1 = 12;
+  player.hb.x2 = 30;
+  player.hb.y2 = 26;
+  player.active = TRUE;
+  player.frameSize = 16;
+  player.tileIndex = 32;
+
+  VDP_setSpriteFull(0, // sprite ID ( 0 to 79 )
+      player.pos_x,   // X in screen coords
+      player.pos_y,   // Y in screen coords
+      SPRITE_SIZE(4,4), // 1x1 to up to 4x4
+      TILE_ATTR_FULL(PAL2,    // PALette
+        1,  // priority
+        0,  // Flip Vertical
+        0,  // Flip Horizontal
+        shipsheet_ind + player.tileIndex  // index
+        ) ,
+      1
+      );
+  totalSprites = 1;
+}
+
+
+static void setupExplosions() {
   // offscreen
   s16 xpos =  -32;
   s16 ypos =  264;
@@ -565,50 +577,45 @@ static void createExplosions() {
     explosions[i].hb.x2 = 0;
     explosions[i].hb.y2 = 0;
     explosions[i].frameSize = 16;
-    explosions[i].frame = 16;
-
-    //SPR_setVisibility( explosions[i].sprite, HIDDEN );
-    ////SPR_setDepth( explosions[i].sprite, SPR_MIN_DEPTH );
+    explosions[i].tileIndex = 0;
   }
 
-}
-
-void createSprites() {
-  s16 x = 160;
-  s16 y = 100;
-  s16 shipframe_offset = 32;
-  s16 shipframe_dir = 1;
-  VDP_setSpriteFull(0, // sprite ID ( 0 to 79 )
-      x,   // X in screen coords
-      y,   // Y in screen coords
-      SPRITE_SIZE(4,4), // 1x1 to up to 4x4
-      TILE_ATTR_FULL(PAL2,    // PALette
-        1,  // priority
-        0,  // Flip Vertical
-        0,  // Flip Horizontal
-        shipsheet_ind + shipframe_offset  // index
-        ) ,
-      1
-      );
-
-
-  for( u16 i=1; i< 11; ++i ) {
-    VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
-        24 * (i-1),   // X in screen coords
+  for( u16 i=0; i< MAX_EXPLOSIONS; ++i ) {
+    VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
+        24 * i,   // X in screen coords
         20 + (i<8? 0:32) ,   // Y in screen coords
         SPRITE_SIZE(4,4), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
           1,  // priority
           0,  // Flip Vertical
           0,  // Flip Horizontal
-          boomsheet_ind + shipframe_offset  // index
+          boomsheet_ind + 16  // index
           ) ,
-        i+1 
+        totalSprites +1 
         );
+    totalSprites++;
+  }
+}
+
+static void setupBossShots() {
+  s16 xpos = -16;
+  s16 ypos = 230;
+
+  for( u16 i=0; i < MAX_BOSS_SHOTS; ++i ) {
+    bossShots[i].pos_x = xpos;
+    bossShots[i].pos_y = ypos;
+    bossShots[i].vel_x = 0;
+    bossShots[i].vel_y = 0;
+    bossShots[i].active = FALSE;
+    bossShots[i].hb.x1 = 0;
+    bossShots[i].hb.y1 = 0;
+    bossShots[i].hb.x2 = 8;
+    bossShots[i].hb.y2 = 8;
+    bossShots[i].frameSize = 1;
   }
 
-  for( u16 i=11; i< 20; ++i ) {
-    VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
+  for( u16 i=0; i< MAX_BOSS_SHOTS; ++i ) {
+    VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
         8 * i,   // X in screen coords
         10,   // Y in screen coords
         SPRITE_SIZE(1,1), // 1x1 to up to 4x4
@@ -618,13 +625,24 @@ void createSprites() {
           0,  // Flip Horizontal
           shots_ind // index
           ),
-        i+1 
+        totalSprites +1 
         );
+    totalSprites++;
   }
+  
+}
 
-  for( u16 i=20; i< 35; ++i ) {
-    VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
-        8 * (i-15),   // X in screen coords
+void createSprites() {
+
+  setupPlayer();
+
+  setupExplosions();
+  //setupBossShots();
+
+
+  for( u16 i=0; i< MAX_PLAYER_SHOTS; ++i ) {
+    VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
+        8 * i,   // X in screen coords
         160,  // Y in screen coords
         SPRITE_SIZE(1,1), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
@@ -633,10 +651,12 @@ void createSprites() {
           0,  // Flip Horizontal
           shots_ind + ( i%2==0 ? 1:2) // index
           ),
-        i+1 
+        totalSprites +1 
         );
+    totalSprites++;
   }
 
+  /*
   for( u16 i=35; i< 40; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
         8 * (i-30),   // X in screen coords
@@ -651,9 +671,9 @@ void createSprites() {
         i+1 
         );
   }
+        */
 
 
-  totalSprites = 40;
 
   VDP_updateSprites(totalSprites, DMA_QUEUE_COPY);
   SYS_doVBlankProcess();
@@ -749,16 +769,6 @@ int main(bool hard)
   }
   SYS_enableInts();
 
-
-  player.pos_x = 144;
-  player.pos_y = 160;
-  player.vel_x = 0;
-  player.vel_y = 0;
-  player.hb.x1 = 2;
-  player.hb.y1 = 12;
-  player.hb.x2 = 30;
-  player.hb.y2 = 26;
-  player.active = TRUE;
 
   createSprites();
   
@@ -928,7 +938,10 @@ int main(bool hard)
     {
       VDP_setVerticalScrollTile(BG_A, 0, vScrollUpperA, 20, DMA_QUEUE);
       VDP_setHorizontalScrollLine(BG_A, 0, hScrollA, 224, DMA_QUEUE);
-      VDP_setVerticalScrollTile(BG_B, 0, vScrollB, 20, DMA_QUEUE); // use array to set plane offsets
+      if( ticks % 2 == 0 ) {
+        VDP_setVerticalScrollTile(BG_B, 0, vScrollB, 20, DMA_QUEUE); // use array to set plane offsets
+      } else {
+      }
       VDP_updateSprites(totalSprites, DMA_QUEUE_COPY);
     }
     SYS_enableInts();
