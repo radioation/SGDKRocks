@@ -125,7 +125,7 @@ u16 shots_ind = 0;
 
 CP_SPRITE bossShots[MAX_BOSS_SHOTS];
 CP_HITBOX boss_lgun_hb;
-CP_HITBOX boss_mgun_hb;
+//CP_HITBOX boss_mgun_hb;
 CP_HITBOX boss_rgun_hb;
 CP_HITBOX boss_lvent_hb;
 CP_HITBOX boss_rvent_hb;
@@ -136,7 +136,7 @@ s16 bossShotDeltaY[8];
 CP_SPRITE explosions[MAX_EXPLOSIONS];
 u16 currentExplosion = 0;
 
-u8 ticks = 0;
+u16 ticks = 0;
 
 s16 currUpperAngle = 0;
 s16 upperStepDir = 1;
@@ -177,10 +177,10 @@ static void addExplosion( s16 pos_x, s16 pos_y ) {
 static void fireBossShots() {
   bool fired = FALSE;
   for( u16 i=0; i < 3; ++i ) {
-    u16 shot = 1 + i* 2;
+    u16 shot = 1 + i + i;
     if( boss_lgun_hb.hitpoints > 0 ) {
-      bossShots[i].pos_x = lgun[currUpperAngle*2]-4 + xUpperOffset;
-      bossShots[i].pos_y = lgun[currUpperAngle*2+1]-4 - yUpperOffset;
+      bossShots[i].pos_x = lgun[currUpperAngle+currUpperAngle]-4 + xUpperOffset;
+      bossShots[i].pos_y = lgun[currUpperAngle+currUpperAngle+1]-4 - yUpperOffset;
       bossShots[i].active = TRUE;
       bossShots[i].vel_x = bossShotDeltaX[shot];
       bossShots[i].vel_y = bossShotDeltaY[shot];
@@ -189,8 +189,8 @@ static void fireBossShots() {
     }
 
     if( boss_rgun_hb.hitpoints > 0 ) {
-      bossShots[i+3].pos_x = rgun[currUpperAngle*2]-4 +xUpperOffset;
-      bossShots[i+3].pos_y = rgun[currUpperAngle*2+1]-4 - yUpperOffset;
+      bossShots[i+3].pos_x = rgun[currUpperAngle+currUpperAngle]-4 +xUpperOffset;
+      bossShots[i+3].pos_y = rgun[currUpperAngle+currUpperAngle+1]-4 - yUpperOffset;
       bossShots[i+3].active = TRUE;
       bossShots[i+3].vel_x = bossShotDeltaX[shot];
       bossShots[i+3].vel_y = bossShotDeltaY[shot];
@@ -199,19 +199,20 @@ static void fireBossShots() {
     }
   }
 
+/*
   if( boss_mgun_hb.hitpoints > 0 ) {
     for( u16 i=0; i < 4; ++i ) {
-      u16 shot =  i * 2;
-      bossShots[i+6].pos_x = mgun[currUpperAngle*2]-4 +xUpperOffset;
-      bossShots[i+6].pos_y = mgun[currUpperAngle*2+1]-4 - yUpperOffset;
+      u16 shot =  i + i;
+      bossShots[i+6].pos_x = mgun[currUpperAngle+currUpperAngle]-4 +xUpperOffset;
+      bossShots[i+6].pos_y = mgun[currUpperAngle+currUpperAngle+1]-4 - yUpperOffset;
       bossShots[i+6].active = TRUE;
       bossShots[i+6].vel_x = bossShotDeltaX[shot];
       bossShots[i+6].vel_y = bossShotDeltaY[shot];
-      KLog_f2( "  x : ", bossShotDeltaX[shot], " y: ", bossShotDeltaY[shot] );
       //SPR_setVisibility( bossShots[i+6].sprite, VISIBLE);
       fired = TRUE;
     }
   }
+*/
 
   if( fired ) {
     //XGM_startPlayPCM(SND_LASERX_4,10,SOUND_PCM_CH4);
@@ -440,6 +441,7 @@ static void checkCollisions() {
       }
     }
 
+/*
     if( boss_mgun_hb.hitpoints > 0 &&
         playerShots[j].active == TRUE &&
         boss_mgun_hb.x1 < (playerShots[j].pos_x + 4) &&
@@ -455,6 +457,7 @@ static void checkCollisions() {
         flashScreen = 3;
       }
     }
+*/
 
     if( boss_lvent_hb.hitpoints > 0 &&
         playerShots[j].active == TRUE &&
@@ -488,17 +491,17 @@ static void checkCollisions() {
     }
 
     if( boss_lgun_hb.hitpoints <=0 && ticks % 14 == 0 ) {
-      addExplosion(  lgun[currUpperAngle * 2]-16 + xUpperOffset, lgun[currUpperAngle * 2 + 1]-16 - yUpperOffset );
+      addExplosion(  lgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset, lgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
     if( boss_rgun_hb.hitpoints <=0  && ticks % 14 == 0) {
-      addExplosion(  rgun[currUpperAngle * 2]-16 + xUpperOffset,  rgun[currUpperAngle * 2 + 1]-16 - yUpperOffset );
+      addExplosion(  rgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset,  rgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
 
     if( boss_lvent_hb.hitpoints <=0 && ticks % 8 == 0 ) {
-      addExplosion(  lvent[currUpperAngle * 2]-16 + xUpperOffset,  lvent[currUpperAngle * 2 + 1]-16 - yUpperOffset );
+      addExplosion(  lvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset,  lvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
     if( boss_rvent_hb.hitpoints <=0  && ticks % 8 == 0) {
-      addExplosion( rvent[currUpperAngle * 2]-16 + xUpperOffset,  rvent[currUpperAngle * 2 + 1]-16 - yUpperOffset );
+      addExplosion( rvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset,  rvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
 
   }
@@ -772,7 +775,7 @@ int main(bool hard)
   JOY_setEventHandler( &myJoyHandler );
 
   boss_lgun_hb.hitpoints = 150;
-  boss_mgun_hb.hitpoints = 150;
+  //boss_mgun_hb.hitpoints = 150;
   boss_rgun_hb.hitpoints = 150;
   boss_lvent_hb.hitpoints = 100;
   boss_rvent_hb.hitpoints = 100;
@@ -793,6 +796,8 @@ int main(bool hard)
 
     // rotation 
     ++ticks;
+    if( ticks > 255 ) ticks = 0;
+
     if( ticks % 6 == 0 ) {
       currUpperAngle += upperStepDir;
       if( currUpperAngle >= lower_SCROLL_COUNT ) {
@@ -899,32 +904,32 @@ int main(bool hard)
     vScrollB[18] -= planeBDeltas[18];
     vScrollB[19] -= planeBDeltas[19];
 
-    boss_lgun_hb.x1 = lgun[currUpperAngle * 2]-16 + xUpperOffset;
-    boss_lgun_hb.y1 = lgun[currUpperAngle * 2 + 1]-16 - yUpperOffset;
+    boss_lgun_hb.x1 = lgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
+    boss_lgun_hb.y1 = lgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
     boss_lgun_hb.x2 = boss_lgun_hb.x1 + 32;
     boss_lgun_hb.y2 = boss_lgun_hb.y1 + 32;
 
-    boss_mgun_hb.x1 = mgun[currUpperAngle * 2]-16 + xUpperOffset;
-    boss_mgun_hb.y1 = mgun[currUpperAngle * 2 + 1]-16 - yUpperOffset;
-    boss_mgun_hb.x2 = boss_mgun_hb.x1 + 32;
-    boss_mgun_hb.y2 = boss_mgun_hb.y1 + 32;
+//    boss_mgun_hb.x1 = mgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
+//    boss_mgun_hb.y1 = mgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
+//    boss_mgun_hb.x2 = boss_mgun_hb.x1 + 32;
+//    boss_mgun_hb.y2 = boss_mgun_hb.y1 + 32;
 
-    boss_rgun_hb.x1 = rgun[currUpperAngle * 2]-16 + xUpperOffset;
-    boss_rgun_hb.y1 = rgun[currUpperAngle * 2 + 1]-16 - yUpperOffset;
+    boss_rgun_hb.x1 = rgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
+    boss_rgun_hb.y1 = rgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
     boss_rgun_hb.x2 = boss_rgun_hb.x1 + 32;
     boss_rgun_hb.y2 = boss_rgun_hb.y1 + 32;
 
-    boss_lvent_hb.x1 = lvent[currUpperAngle * 2]-16 + xUpperOffset;
-    boss_lvent_hb.y1 = lvent[currUpperAngle * 2 + 1]-16 - yUpperOffset;
+    boss_lvent_hb.x1 = lvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
+    boss_lvent_hb.y1 = lvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
     boss_lvent_hb.x2 = boss_lvent_hb.x1 + 32;
     boss_lvent_hb.y2 = boss_lvent_hb.y1 + 32;
 
-    boss_rvent_hb.x1 = rvent[currUpperAngle * 2]-16 + xUpperOffset;
-    boss_rvent_hb.y1 = rvent[currUpperAngle * 2 + 1]-16 - yUpperOffset;
+    boss_rvent_hb.x1 = rvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
+    boss_rvent_hb.y1 = rvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
     boss_rvent_hb.x2 = boss_rvent_hb.x1 + 32;
     boss_rvent_hb.y2 = boss_rvent_hb.y1 + 32;
 
-    //update();
+    update();
     //checkCollisions();
     
     // queu it up.
@@ -937,13 +942,11 @@ int main(bool hard)
       //} else {
       //}
 
-/*    
     VDP_setSpritePosition(0, // sprite ID ( 0 to 79 )
         player.pos_x,   // X in screen coords
         player.pos_y   // Y in screen coords
         );
       VDP_updateSprites(totalSprites, DMA_QUEUE);
-*/
     }
     SYS_enableInts();
     SYS_doVBlankProcess();
