@@ -68,11 +68,7 @@ HINTERRUPT_CALLBACK HIntHandler()
 }
 void VBlankHandler()
 {
-  // Reset to line 0
   lineDisplay = 0;
-
-  // set vertical rotation component for upper part of BG_A
-  //memcpy( vScrollA, vScrollUpperA, sizeof(vScrollUpperA));
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -167,7 +163,7 @@ static void addExplosion( s16 pos_x, s16 pos_y ) {
     //SPR_setPosition( explosions[currentExplosion].sprite,fix16ToInt(explosions[
     //currentExplosion].pos_x),fix16ToInt(explosions[currentExplosion].pos_y));
 
-    XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
+    //XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
 
     // point to next one
     ++currentExplosion;
@@ -218,7 +214,7 @@ static void fireBossShots() {
   }
 
   if( fired ) {
-    XGM_startPlayPCM(SND_LASERX_4,10,SOUND_PCM_CH4);
+    //XGM_startPlayPCM(SND_LASERX_4,10,SOUND_PCM_CH4);
   }
 }
 
@@ -232,7 +228,7 @@ static void myJoyHandler( u16 joy, u16 changed, u16 state)
   if (joy == JOY_1)
   {
     if (state & BUTTON_A) {
-      XGM_startPlayPCM(SND_LASER1,1,SOUND_PCM_CH2);
+      //XGM_startPlayPCM(SND_LASER1,1,SOUND_PCM_CH2);
       u16 addedShot = 0;
       for( u16 i=0; i < MAX_PLAYER_SHOTS; ++i ) {
         if( playerShots[i].active == FALSE ) {
@@ -509,28 +505,6 @@ static void checkCollisions() {
   //
 }
 
-static void createShipShots() {
-  s16 xpos =  -16; // offline
-  s16 ypos =  230;
-
-  for( u16 i=0; i < MAX_PLAYER_SHOTS; ++i ) {
-    playerShots[i].pos_x = xpos;
-    playerShots[i].pos_y = ypos;
-    playerShots[i].vel_x = 0;
-    playerShots[i].vel_y = 0;
-    playerShots[i].active = FALSE;
-    playerShots[i].hb.x1 = 0;
-    playerShots[i].hb.y1 = 0;
-    playerShots[i].hb.x2 = 8;
-    playerShots[i].hb.y2 = 8;
-    playerShots[i].frameSize = 1;
-
-    //playerShots[i].sprite = SPR_addSprite( &shots, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
-    //SPR_setAnim( playerShots[i].sprite, 3 );
-  }
-
-}
-
 
 static void setupPlayer() {
   player.pos_x = 144;
@@ -612,6 +586,7 @@ static void setupBossShots() {
     bossShots[i].hb.x2 = 8;
     bossShots[i].hb.y2 = 8;
     bossShots[i].frameSize = 1;
+    bossShots[i].tileIndex = 0;
   }
 
   for( u16 i=0; i< MAX_BOSS_SHOTS; ++i ) {
@@ -623,7 +598,7 @@ static void setupBossShots() {
           1,  // priority
           0,  // Flip Vertical
           0,  // Flip Horizontal
-          shots_ind // index
+          shots_ind + bossShots[i].tileIndex// index
           ),
         totalSprites +1 
         );
@@ -632,13 +607,24 @@ static void setupBossShots() {
   
 }
 
-void createSprites() {
+static void setupPlayerShots() {
+  s16 xpos =  -16; // offline
+  s16 ypos =  230;
 
-  setupPlayer();
+  for( u16 i=0; i < MAX_PLAYER_SHOTS; ++i ) {
+    playerShots[i].pos_x = xpos;
+    playerShots[i].pos_y = ypos;
+    playerShots[i].vel_x = 0;
+    playerShots[i].vel_y = 0;
+    playerShots[i].active = FALSE;
+    playerShots[i].hb.x1 = 0;
+    playerShots[i].hb.y1 = 0;
+    playerShots[i].hb.x2 = 8;
+    playerShots[i].hb.y2 = 8;
+    playerShots[i].frameSize = 1;
+    playerShots[i].tileIndex = 2;
 
-  setupExplosions();
-  //setupBossShots();
-
+  }
 
   for( u16 i=0; i< MAX_PLAYER_SHOTS; ++i ) {
     VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
@@ -655,6 +641,15 @@ void createSprites() {
         );
     totalSprites++;
   }
+}
+
+void createSprites() {
+
+  setupPlayer();
+
+  setupExplosions();
+  setupBossShots();
+  setupPlayerShots();
 
   /*
   for( u16 i=35; i< 40; ++i ) {
@@ -919,7 +914,6 @@ int main(bool hard)
     boss_rgun_hb.x2 = boss_rgun_hb.x1 + 32;
     boss_rgun_hb.y2 = boss_rgun_hb.y1 + 32;
 
-
     boss_lvent_hb.x1 = lvent[currUpperAngle * 2]-16 + xUpperOffset;
     boss_lvent_hb.y1 = lvent[currUpperAngle * 2 + 1]-16 - yUpperOffset;
     boss_lvent_hb.x2 = boss_lvent_hb.x1 + 32;
@@ -938,11 +932,16 @@ int main(bool hard)
     {
       VDP_setVerticalScrollTile(BG_A, 0, vScrollUpperA, 20, DMA_QUEUE);
       VDP_setHorizontalScrollLine(BG_A, 0, hScrollA, 224, DMA_QUEUE);
-      if( ticks % 2 == 0 ) {
-        VDP_setVerticalScrollTile(BG_B, 0, vScrollB, 20, DMA_QUEUE); // use array to set plane offsets
-      } else {
-      }
-      VDP_updateSprites(totalSprites, DMA_QUEUE_COPY);
+      //if( ticks % 2 == 0 ) {
+      VDP_setVerticalScrollTile(BG_B, 0, vScrollB, 20, DMA_QUEUE); // use array to set plane offsets
+      //} else {
+      //}
+    
+    VDP_setSpritePosition(0, // sprite ID ( 0 to 79 )
+        player.pos_x,   // X in screen coords
+        player.pos_y   // Y in screen coords
+        );
+      VDP_updateSprites(totalSprites, DMA_QUEUE);
     }
     SYS_enableInts();
     SYS_doVBlankProcess();
