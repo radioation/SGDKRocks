@@ -57,7 +57,7 @@ static vu16  lineDisplay   = 0;     // line position on display screen
 
 HINTERRUPT_CALLBACK HIntHandler()
 {
-  if( lineDisplay == 120 ) {
+  if( lineDisplay == 11 ) {
     // set vertical rotation component for lwoer part of BG_A
     //memcpy( vScrollA, vScrollLowerA, sizeof(vScrollLowerA));
     VDP_setVerticalScrollTile(BG_A, 0, vScrollLowerA, 20, DMA);
@@ -759,7 +759,7 @@ int main(bool hard)
   {
     SYS_setVBlankCallback(VBlankHandler);
     SYS_setHIntCallback(HIntHandler);
-    VDP_setHIntCounter(0);
+    VDP_setHIntCounter(10);
     VDP_setHInterrupt(1);
   }
   SYS_enableInts();
@@ -924,8 +924,8 @@ int main(bool hard)
     boss_rvent_hb.x2 = boss_rvent_hb.x1 + 32;
     boss_rvent_hb.y2 = boss_rvent_hb.y1 + 32;
 
-    update();
-    checkCollisions();
+    //update();
+    //checkCollisions();
     
     // queu it up.
     SYS_disableInts();
@@ -936,12 +936,14 @@ int main(bool hard)
       VDP_setVerticalScrollTile(BG_B, 0, vScrollB, 20, DMA_QUEUE); // use array to set plane offsets
       //} else {
       //}
-    
+
+/*    
     VDP_setSpritePosition(0, // sprite ID ( 0 to 79 )
         player.pos_x,   // X in screen coords
         player.pos_y   // Y in screen coords
         );
       VDP_updateSprites(totalSprites, DMA_QUEUE);
+*/
     }
     SYS_enableInts();
     SYS_doVBlankProcess();
