@@ -5,7 +5,7 @@ ggallard@BOOMSTICK:/mnt/c/Dev/SGDK/sgdk180$ find . -type f -name "*.[c|h]" -exec
 ggallard@BOOMSTICK:/mnt/c/Dev/SGDK/sgdk180$ find . -type f -name "*.[c|h]" -exec grep "\bVDP_setSpriteP\b" --color {} +
 ggallard@BOOMSTICK:/mnt/c/Dev/SGDK/sgdk180$
 ```
-* OTOH, a bunch of functions starting with `VDP_setSprite` are available.  With names like `VDP_setSpritePosition()` and `VDP_setSpriteTile(), it should be obvious what they do.
+* OTOH, a bunch of functions starting with `VDP_setSprite` are available.  With names like `VDP_setSpritePosition()` and `VDP_setSpriteTile()`, it should be obvious what they do.
 ```bash
 ggallard@BOOMSTICK:/mnt/c/Dev/SGDK/sgdk180$ find . -type f -name "*.[c|h]" -exec grep "\bvoid VDP_setSprite" --color {} +
 ./inc/vdp.h:void VDP_setSpriteListAddress(u16 value);
