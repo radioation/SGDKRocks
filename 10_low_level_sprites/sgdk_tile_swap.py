@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
-import os,  argparse, logging
+import os,  argparse
 import numpy as np
 import math
 from PIL import Image, ImageDraw
-import cv2
 import shutil
-from jinja2 import Template
 from pathlib import Path
 
 
-def main(args, loglevel):
-  logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
+def main(args):
+  
   spriteWidthTiles = args.width
   spriteHeightTiles = args.height
   if spriteWidthTiles == 0 or spriteHeightTiles == 0:
@@ -23,10 +21,6 @@ def main(args, loglevel):
 
   imageFilename = args.input_filename
   outputFilename = args.output_filename
-
-  # 320 x 224  
-  COLS = 320  
-  rows = 224
 
 
   with Image.open( imageFilename ) as im:
@@ -44,8 +38,6 @@ def main(args, loglevel):
       print("Image width and height must be multiples of sprite width and height.")
       return
 
-    inputCv = np.array(inputImg)
-    #pal = im.getpalette()
 
     # create a work image
     workImg = Image.new('RGB', (imageWidthPixels, imageHeightPixels))
@@ -85,7 +77,7 @@ def main(args, loglevel):
 
 
     outImg = workImg.quantize( palette = im )
-    #outImg.putpalette(pal)
+
     outImg.save( outputFilename )
 
 
@@ -93,17 +85,11 @@ def main(args, loglevel):
 # the program.
 if __name__ == '__main__':
   parser = argparse.ArgumentParser( 
-      description = "Swap tile positions for use with backgrounds or sprites",
+      description = "Swap tile positions in sprite sheets for use with `VDP_loadTileData()`",
       epilog = "As an alternative to the commandline, params can be placed in a file, one per line, and specified on the commandline like '%(prog)s @params.conf'.",
       fromfile_prefix_chars = '@' )
 
   # parameter list
-  parser.add_argument(
-      "-v",
-      "--verbose",
-      help="increase output verbosity",
-      action="store_true")
-
   parser.add_argument( "-W",
       "--width",
       default = 2,
@@ -131,18 +117,8 @@ if __name__ == '__main__':
       help = "Output filename",
       metavar = "ARG")
 
-  parser.add_argument(
-      "-b",
-      "--sprite_formatting",
-      help="Output warped images used to create final image.",
-      action="store_true")
 
   args = parser.parse_args()
 
-  # Setup logging
-  if args.verbose:
-    loglevel = logging.INFO
-  else:
-    loglevel = logging.WARNING
 
-  main(args, loglevel)
+  main(args)
