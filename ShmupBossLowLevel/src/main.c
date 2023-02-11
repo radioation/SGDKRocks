@@ -26,6 +26,7 @@ const u16 palette_flash[15] =
   0x0EEE,
   0x0EEE
 };
+
 static u8 flashScreen = 0;
 static bool useFlash = FALSE;
 
@@ -77,25 +78,26 @@ void VBlankHandler()
 /////////////////////////////////////////////////////////////////////
 // Entities
 typedef struct {
-  fix16 x1;
-  fix16 y1;
-  fix16 x2;
-  fix16 y2;
+  s16 x1;
+  s16 y1;
+  s16 x2;
+  s16 y2;
   u16 hitpoints;
 } CP_HITBOX;
 
 typedef struct {
   Sprite *sprite;
-  fix16 pos_x;
-  fix16 pos_y;
-  fix16 vel_x;
-  fix16 vel_y;
+  s16 pos_x;
+  s16 pos_y;
+  s16 vel_x;
+  s16 vel_y;
 
   CP_HITBOX hb;
 
   bool active;
 
-  u16 frame;
+  u16 frameSize; 
+  u16 frame; 
 
 } CP_SPRITE;
 
@@ -111,10 +113,10 @@ typedef struct {
 
 #define MAX_EXPLOSIONS      12
 
-#define LEFT_EDGE  FIX16(0)
-#define RIGHT_EDGE  FIX16(320)
-#define TOP_EDGE FIX16(0)
-#define BOTTOM_EDGE FIX16(224)
+#define LEFT_EDGE  0
+#define RIGHT_EDGE  320
+#define TOP_EDGE 0
+#define BOTTOM_EDGE 224
 
 CP_SPRITE player;
 s16 playerAnim = 5;
@@ -132,8 +134,8 @@ CP_HITBOX boss_rgun_hb;
 CP_HITBOX boss_lvent_hb;
 CP_HITBOX boss_rvent_hb;
 
-fix16 bossShotDeltaX[8];
-fix16 bossShotDeltaY[8];
+s16 bossShotDeltaX[8];
+s16 bossShotDeltaY[8];
 
 CP_SPRITE explosions[MAX_EXPLOSIONS];
 u16 currentExplosion = 0;
@@ -154,26 +156,24 @@ s16 yLowerOffsetDir = 1;
 
 
 static void createBossShots() {
-  fix16 xpos = FIX16(-16);
-  fix16 ypos = FIX16(230);
+  s16 xpos = -16;
+  s16 ypos = 230;
 
   for( u16 i=0; i < MAX_BOSS_SHOTS; ++i ) {
     bossShots[i].pos_x = xpos;
     bossShots[i].pos_y = ypos;
-    bossShots[i].vel_x = FIX16(0);
-    bossShots[i].vel_y = FIX16(0);
+    bossShots[i].vel_x = 0;
+    bossShots[i].vel_y = 0;
     bossShots[i].active = FALSE;
-    bossShots[i].hb.x1 = FIX16(0);
-    bossShots[i].hb.y1 = FIX16(0);
-    bossShots[i].hb.x2 = FIX16(8);
-    bossShots[i].hb.y2 = FIX16(8);
-
-    //bossShots[i].sprite = SPR_addSprite( &shots, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
-    //SPR_setAnim( bossShots[i].sprite, 0 );
+    bossShots[i].hb.x1 = 0;
+    bossShots[i].hb.y1 = 0;
+    bossShots[i].hb.x2 = 8;
+    bossShots[i].hb.y2 = 8;
+    bossShots[i].frameSize = 1;
   }
 }
 
-static void addExplosion(  fix16 pos_x, fix16 pos_y ) {
+static void addExplosion( s16 pos_x, s16 pos_y ) {
   if( explosions[ currentExplosion ].active == FALSE ){
     // use it
     explosions[currentExplosion].pos_x  = pos_x;
@@ -201,8 +201,8 @@ static void fireBossShots() {
   for( u16 i=0; i < 3; ++i ) {
     u16 shot = 1 + i* 2;
     if( boss_lgun_hb.hitpoints > 0 ) {
-      bossShots[i].pos_x = FIX16(lgun[currUpperAngle*2]-4 + xUpperOffset);
-      bossShots[i].pos_y = FIX16(lgun[currUpperAngle*2+1]-4 - yUpperOffset);
+      bossShots[i].pos_x = lgun[currUpperAngle*2]-4 + xUpperOffset;
+      bossShots[i].pos_y = lgun[currUpperAngle*2+1]-4 - yUpperOffset;
       bossShots[i].active = TRUE;
       bossShots[i].vel_x = bossShotDeltaX[shot];
       bossShots[i].vel_y = bossShotDeltaY[shot];
@@ -211,8 +211,8 @@ static void fireBossShots() {
     }
 
     if( boss_rgun_hb.hitpoints > 0 ) {
-      bossShots[i+3].pos_x = FIX16(rgun[currUpperAngle*2]-4 +xUpperOffset);
-      bossShots[i+3].pos_y = FIX16(rgun[currUpperAngle*2+1]-4 - yUpperOffset);
+      bossShots[i+3].pos_x = rgun[currUpperAngle*2]-4 +xUpperOffset;
+      bossShots[i+3].pos_y = rgun[currUpperAngle*2+1]-4 - yUpperOffset;
       bossShots[i+3].active = TRUE;
       bossShots[i+3].vel_x = bossShotDeltaX[shot];
       bossShots[i+3].vel_y = bossShotDeltaY[shot];
@@ -224,8 +224,8 @@ static void fireBossShots() {
   if( boss_mgun_hb.hitpoints > 0 ) {
     for( u16 i=0; i < 4; ++i ) {
       u16 shot =  i * 2;
-      bossShots[i+6].pos_x = FIX16(mgun[currUpperAngle*2]-4 +xUpperOffset);
-      bossShots[i+6].pos_y = FIX16(mgun[currUpperAngle*2+1]-4 - yUpperOffset);
+      bossShots[i+6].pos_x = mgun[currUpperAngle*2]-4 +xUpperOffset;
+      bossShots[i+6].pos_y = mgun[currUpperAngle*2+1]-4 - yUpperOffset;
       bossShots[i+6].active = TRUE;
       bossShots[i+6].vel_x = bossShotDeltaX[shot];
       bossShots[i+6].vel_y = bossShotDeltaY[shot];
@@ -256,22 +256,22 @@ static void myJoyHandler( u16 joy, u16 changed, u16 state)
         if( playerShots[i].active == FALSE ) {
           playerShots[i].active = TRUE;
           // set its starting position
-          playerShots[i].pos_x = player.pos_x+ FIX16(12);
+          playerShots[i].pos_x = player.pos_x+ 12;
           playerShots[i].pos_y = player.pos_y;
           switch( addedShot ) {
             case 0:
-              playerShots[i].vel_x =  FIX16(0);
-              playerShots[i].vel_y = FIX16(-6);
+              playerShots[i].vel_x =  0;
+              playerShots[i].vel_y = -6;
               break;
 
             case 1:
-              playerShots[i].vel_x = FIX16(-1.5);
-              playerShots[i].vel_y = FIX16(-5);
+              playerShots[i].vel_x = -2;
+              playerShots[i].vel_y = -5;
               break;
 
             case 2:
-              playerShots[i].vel_x = FIX16(1.5);
-              playerShots[i].vel_y = FIX16(-5);
+              playerShots[i].vel_x = 2;
+              playerShots[i].vel_y = -5;
               break;
           }
           ++addedShot;
@@ -287,27 +287,27 @@ static void myJoyHandler( u16 joy, u16 changed, u16 state)
     //set velocity to 0 if no direction is pressed
     if (state & BUTTON_RIGHT)
     {
-      player.vel_x = FIX16(2);
+      player.vel_x = 2;
     }
     else if (state & BUTTON_LEFT)
     {
-      player.vel_x = FIX16(-2);
+      player.vel_x = -2;
     } else{
       if( (changed & BUTTON_RIGHT) | (changed & BUTTON_LEFT) ){
-        player.vel_x = FIX16(0);
+        player.vel_x = 0;
       }
     }
 
     if (state & BUTTON_UP)
     {
-      player.vel_y = FIX16(-2);
+      player.vel_y = -2;
     }
     else if (state & BUTTON_DOWN)
     {
-      player.vel_y = FIX16(2);
+      player.vel_y = 2;
     } else{
       if( (changed & BUTTON_UP) | (changed & BUTTON_DOWN) ){
-        player.vel_y = FIX16(0);
+        player.vel_y = 0;
       }
     }
   }
@@ -319,10 +319,10 @@ static void update() {
   //Check horizontal bounds
   if(player.pos_x < LEFT_EDGE){
     player.pos_x = LEFT_EDGE;
-    player.vel_x = FIX16(0);
+    player.vel_x = 0;
   } else if(player.pos_x + (player.hb.x2 - player.hb.x1 ) > RIGHT_EDGE){
     player.pos_x = RIGHT_EDGE - (player.hb.x2 - player.hb.x1) ;
-    player.vel_x = FIX16(0);
+    player.vel_x = 0;
   }
 
   if( player.vel_x == 0 ) {
@@ -349,10 +349,10 @@ static void update() {
   //Check vertical bounds
   if(player.pos_y < TOP_EDGE){
     player.pos_y = TOP_EDGE;
-    player.vel_y = FIX16(0);
+    player.vel_y = 0;
   } else if(player.pos_y + (player.hb.y2 - player.hb.y1 ) > BOTTOM_EDGE){
     player.pos_y = BOTTOM_EDGE - ( player.hb.y2 - player.hb.y1 );
-    player.vel_y = FIX16(0);
+    player.vel_y = 0;
   }
 
   //Position the ship
@@ -365,7 +365,7 @@ static void update() {
     if( playerShots[i].active == TRUE ) {
       playerShots[i].pos_x +=  playerShots[i].vel_x;
       playerShots[i].pos_y +=  playerShots[i].vel_y;
-      if(playerShots[i].pos_y  < FIX16(0) ) {
+      if(playerShots[i].pos_y  < 0 ) {
         //SPR_setVisibility( playerShots[i].sprite, HIDDEN);
         playerShots[i].active = FALSE;
       } else {
@@ -380,10 +380,10 @@ static void update() {
     if( bossShots[i].active == TRUE ) {
       bossShots[i].pos_x +=  bossShots[i].vel_x;
       bossShots[i].pos_y +=  bossShots[i].vel_y;
-      if( (bossShots[i].pos_y  > FIX16(224) )  ||
-          (bossShots[i].pos_y  < FIX16(0) )  ||
-          (bossShots[i].pos_x  > FIX16(320) )  ||
-          (bossShots[i].pos_x  < FIX16(0) ) ) {
+      if( (bossShots[i].pos_y  > 224 )  ||
+          (bossShots[i].pos_y  < 0 )  ||
+          (bossShots[i].pos_x  > 320 )  ||
+          (bossShots[i].pos_x  < 0 ) ) {
         bossShots[i].active = FALSE;
         //SPR_setVisibility( bossShots[i].sprite, HIDDEN);
       } else {
@@ -418,14 +418,14 @@ static void checkCollisions() {
 
   for( u16 i=0; i < MAX_BOSS_SHOTS; ++i ) {
     if( bossShots[i].active == TRUE ) {
-      if( (bossShots[i].pos_x + FIX16(4) ) < (player.pos_x + player.hb.x2) &&
-          (bossShots[i].pos_x + FIX16(4) ) > (player.pos_x + player.hb.x1) &&
-          (bossShots[i].pos_y + FIX16(4) ) < (player.pos_y + player.hb.y2) &&
-          (bossShots[i].pos_y + FIX16(4) ) > (player.pos_y + player.hb.y1)  )
+      if( (bossShots[i].pos_x + 4 ) < (player.pos_x + player.hb.x2) &&
+          (bossShots[i].pos_x + 4 ) > (player.pos_x + player.hb.x1) &&
+          (bossShots[i].pos_y + 4 ) < (player.pos_y + player.hb.y2) &&
+          (bossShots[i].pos_y + 4 ) > (player.pos_y + player.hb.y1)  )
       {
         bossShots[i].active = FALSE;
         //SPR_setVisibility( bossShots[i].sprite, HIDDEN);
-        addExplosion(  bossShots[i].pos_x - FIX16(12), bossShots[i].pos_y - FIX16(12) );
+        addExplosion(  bossShots[i].pos_x - 12, bossShots[i].pos_y - 12 );
       }
     }
   }
@@ -433,30 +433,30 @@ static void checkCollisions() {
   for( u16 j=0; j < MAX_PLAYER_SHOTS; ++j ) {
     if( boss_lgun_hb.hitpoints > 0 &&
         playerShots[j].active == TRUE &&
-        FIX16(boss_lgun_hb.x1) < (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_lgun_hb.x2) > (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_lgun_hb.y1) < (playerShots[j].pos_y + FIX16(4)) &&
-        FIX16(boss_lgun_hb.y2) > (playerShots[j].pos_y + FIX16(4))  )
+        boss_lgun_hb.x1 < (playerShots[j].pos_x + 4) &&
+        boss_lgun_hb.x2 > (playerShots[j].pos_x + 4) &&
+        boss_lgun_hb.y1 < (playerShots[j].pos_y + 4) &&
+        boss_lgun_hb.y2 > (playerShots[j].pos_y + 4)  )
     {
       --boss_lgun_hb.hitpoints;
       playerShots[j].active = FALSE;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion( playerShots[j].pos_x - 16, playerShots[j].pos_y - 16);
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
     }
     if( boss_rgun_hb.hitpoints > 0 &&
         playerShots[j].active == TRUE &&
-        FIX16(boss_rgun_hb.x1) < (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_rgun_hb.x2) > (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_rgun_hb.y1) < (playerShots[j].pos_y + FIX16(4)) &&
-        FIX16(boss_rgun_hb.y2) > (playerShots[j].pos_y + FIX16(4))  )
+        boss_rgun_hb.x1 < (playerShots[j].pos_x + 4) &&
+        boss_rgun_hb.x2 > (playerShots[j].pos_x + 4) &&
+        boss_rgun_hb.y1 < (playerShots[j].pos_y + 4) &&
+        boss_rgun_hb.y2 > (playerShots[j].pos_y + 4)  )
     {
       --boss_rgun_hb.hitpoints;
       playerShots[j].active = FALSE;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion( playerShots[j].pos_x - 16, playerShots[j].pos_y - 16);
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
@@ -464,15 +464,15 @@ static void checkCollisions() {
 
     if( boss_mgun_hb.hitpoints > 0 &&
         playerShots[j].active == TRUE &&
-        FIX16(boss_mgun_hb.x1) < (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_mgun_hb.x2) > (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_mgun_hb.y1) < (playerShots[j].pos_y + FIX16(4)) &&
-        FIX16(boss_mgun_hb.y2) > (playerShots[j].pos_y + FIX16(4))  )
+        boss_mgun_hb.x1 < (playerShots[j].pos_x + 4) &&
+        boss_mgun_hb.x2 > (playerShots[j].pos_x + 4) &&
+        boss_mgun_hb.y1 < (playerShots[j].pos_y + 4) &&
+        boss_mgun_hb.y2 > (playerShots[j].pos_y + 4)  )
     {
       --boss_mgun_hb.hitpoints;
       playerShots[j].active = FALSE;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion( playerShots[j].pos_x - 16, playerShots[j].pos_y -16);
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
@@ -480,47 +480,47 @@ static void checkCollisions() {
 
     if( boss_lvent_hb.hitpoints > 0 &&
         playerShots[j].active == TRUE &&
-        FIX16(boss_lvent_hb.x1) < (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_lvent_hb.x2) > (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_lvent_hb.y1) < (playerShots[j].pos_y + FIX16(4)) &&
-        FIX16(boss_lvent_hb.y2) > (playerShots[j].pos_y + FIX16(4))  )
+        boss_lvent_hb.x1 < (playerShots[j].pos_x + 4) &&
+        boss_lvent_hb.x2 > (playerShots[j].pos_x + 4) &&
+        boss_lvent_hb.y1 < (playerShots[j].pos_y + 4) &&
+        boss_lvent_hb.y2 > (playerShots[j].pos_y + 4)  )
     {
       --boss_lvent_hb.hitpoints;
       playerShots[j].active = FALSE;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion( playerShots[j].pos_x - 16, playerShots[j].pos_y - 16);
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
     }
     if( boss_rvent_hb.hitpoints > 0 &&
         playerShots[j].active == TRUE &&
-        FIX16(boss_rvent_hb.x1) < (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_rvent_hb.x2) > (playerShots[j].pos_x + FIX16(4)) &&
-        FIX16(boss_rvent_hb.y1) < (playerShots[j].pos_y + FIX16(4)) &&
-        FIX16(boss_rvent_hb.y2) > (playerShots[j].pos_y + FIX16(4))  )
+        boss_rvent_hb.x1 < (playerShots[j].pos_x + 4) &&
+        boss_rvent_hb.x2 > (playerShots[j].pos_x + 4) &&
+        boss_rvent_hb.y1 < (playerShots[j].pos_y + 4) &&
+        boss_rvent_hb.y2 > (playerShots[j].pos_y + 4)  )
     {
       --boss_rvent_hb.hitpoints;
       playerShots[j].active = FALSE;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion(  playerShots[j].pos_x - 16, playerShots[j].pos_y - 16);
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
     }
 
     if( boss_lgun_hb.hitpoints <=0 && ticks % 14 == 0 ) {
-      addExplosion( FIX16( lgun[currUpperAngle * 2]-16 + xUpperOffset ), FIX16( lgun[currUpperAngle * 2 + 1]-16 - yUpperOffset ) );
+      addExplosion(  lgun[currUpperAngle * 2]-16 + xUpperOffset, lgun[currUpperAngle * 2 + 1]-16 - yUpperOffset );
     }
     if( boss_rgun_hb.hitpoints <=0  && ticks % 14 == 0) {
-      addExplosion( FIX16( rgun[currUpperAngle * 2]-16 + xUpperOffset ), FIX16( rgun[currUpperAngle * 2 + 1]-16 - yUpperOffset ) );
+      addExplosion(  rgun[currUpperAngle * 2]-16 + xUpperOffset,  rgun[currUpperAngle * 2 + 1]-16 - yUpperOffset );
     }
 
     if( boss_lvent_hb.hitpoints <=0 && ticks % 8 == 0 ) {
-      addExplosion( FIX16( lvent[currUpperAngle * 2]-16 + xUpperOffset ), FIX16( lvent[currUpperAngle * 2 + 1]-16 - yUpperOffset ) );
+      addExplosion(  lvent[currUpperAngle * 2]-16 + xUpperOffset,  lvent[currUpperAngle * 2 + 1]-16 - yUpperOffset );
     }
     if( boss_rvent_hb.hitpoints <=0  && ticks % 8 == 0) {
-      addExplosion( FIX16( rvent[currUpperAngle * 2]-16 + xUpperOffset ), FIX16( rvent[currUpperAngle * 2 + 1]-16 - yUpperOffset ) );
+      addExplosion( rvent[currUpperAngle * 2]-16 + xUpperOffset,  rvent[currUpperAngle * 2 + 1]-16 - yUpperOffset );
     }
 
   }
@@ -528,19 +528,20 @@ static void checkCollisions() {
 }
 
 static void createShipShots() {
-  fix16 xpos =  FIX16(-16);
-  fix16 ypos =  FIX16(230);
+  s16 xpos =  -16; // offline
+  s16 ypos =  230;
 
   for( u16 i=0; i < MAX_PLAYER_SHOTS; ++i ) {
     playerShots[i].pos_x = xpos;
     playerShots[i].pos_y = ypos;
-    playerShots[i].vel_x = FIX16(0);
-    playerShots[i].vel_y = FIX16(0);
+    playerShots[i].vel_x = 0;
+    playerShots[i].vel_y = 0;
     playerShots[i].active = FALSE;
-    playerShots[i].hb.x1 = FIX16(0);
-    playerShots[i].hb.y1 = FIX16(0);
-    playerShots[i].hb.x2 = FIX16(8);
-    playerShots[i].hb.y2 = FIX16(8);
+    playerShots[i].hb.x1 = 0;
+    playerShots[i].hb.y1 = 0;
+    playerShots[i].hb.x2 = 8;
+    playerShots[i].hb.y2 = 8;
+    playerShots[i].frameSize = 1;
 
     //playerShots[i].sprite = SPR_addSprite( &shots, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
     //SPR_setAnim( playerShots[i].sprite, 3 );
@@ -549,21 +550,23 @@ static void createShipShots() {
 }
 
 static void createExplosions() {
-  fix16 xpos =  FIX16(0);
-  fix16 ypos =  FIX16(264);
+  // offscreen
+  s16 xpos =  -32;
+  s16 ypos =  264;
 
   for( u16 i=0; i < MAX_EXPLOSIONS; ++i ) {
     explosions[i].pos_x = xpos;
     explosions[i].pos_y = ypos;
-    explosions[i].vel_x = FIX16(0);
-    explosions[i].vel_y = FIX16(0);
+    explosions[i].vel_x = 0;
+    explosions[i].vel_y = 0;
     explosions[i].active = FALSE;
-    explosions[i].hb.x1 = FIX16(0);
-    explosions[i].hb.y1 = FIX16(0);
-    explosions[i].hb.x2 = FIX16(0);
-    explosions[i].hb.y2 = FIX16(0);
+    explosions[i].hb.x1 = 0;
+    explosions[i].hb.y1 = 0;
+    explosions[i].hb.x2 = 0;
+    explosions[i].hb.y2 = 0;
+    explosions[i].frameSize = 16;
+    explosions[i].frame = 16;
 
-    //explosions[i].sprite = SPR_addSprite( &boomsheet, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
     //SPR_setVisibility( explosions[i].sprite, HIDDEN );
     ////SPR_setDepth( explosions[i].sprite, SPR_MIN_DEPTH );
   }
@@ -589,7 +592,7 @@ void createSprites() {
       );
 
 
-  for( u16 i=1; i< 13; ++i ) {
+  for( u16 i=1; i< 11; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
         24 * (i-1),   // X in screen coords
         20 + (i<8? 0:32) ,   // Y in screen coords
@@ -604,7 +607,7 @@ void createSprites() {
         );
   }
 
-  for( u16 i=13; i< 22; ++i ) {
+  for( u16 i=11; i< 20; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
         8 * i,   // X in screen coords
         10,   // Y in screen coords
@@ -619,7 +622,7 @@ void createSprites() {
         );
   }
 
-  for( u16 i=22; i< 42; ++i ) {
+  for( u16 i=20; i< 35; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
         8 * (i-15),   // X in screen coords
         160,  // Y in screen coords
@@ -628,13 +631,13 @@ void createSprites() {
           1,  // priority
           0,  // Flip Vertical
           0,  // Flip Horizontal
-          shots_ind + 2 // index
+          shots_ind + ( i%2==0 ? 1:2) // index
           ),
         i+1 
         );
   }
 
-  for( u16 i=42; i< 52; ++i ) {
+  for( u16 i=35; i< 40; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
         8 * (i-30),   // X in screen coords
         180,  // Y in screen coords
@@ -650,7 +653,7 @@ void createSprites() {
   }
 
 
-  totalSprites = 52;
+  totalSprites = 40;
 
   VDP_updateSprites(totalSprites, DMA_QUEUE_COPY);
   SYS_doVBlankProcess();
@@ -662,24 +665,16 @@ int main(bool hard)
 
   // setup shots
   // head shot
-  bossShotDeltaX[0] = FIX16( 1.414214 );
-  bossShotDeltaY[0] = FIX16( 1.414214 );
-  u16 shot = 0;
-  bossShotDeltaX[1] = FIX16( 1.064064 );
-  bossShotDeltaY[1] = FIX16( 1.693448 );
-  bossShotDeltaX[2] = FIX16( 0.660558 );
-  bossShotDeltaY[2] = FIX16( 1.887767 );
-  bossShotDeltaX[3] = FIX16( 0.223929 );
-  bossShotDeltaY[3] = FIX16( 1.987424 );
+  bossShotDeltaX[0] =  2;
+  bossShotDeltaY[0] =  2;
+  bossShotDeltaX[1] =  0;
+  bossShotDeltaY[1] =  3;
+  bossShotDeltaX[2] =  -2;
+  bossShotDeltaY[2] =  2;
 
-  bossShotDeltaX[4] = FIX16( -0.223929 );
-  bossShotDeltaY[4] = FIX16( 1.987424 );
-  bossShotDeltaX[5] = FIX16( -0.660558 );
-  bossShotDeltaY[5] = FIX16( 1.887767 );
-  bossShotDeltaX[6] = FIX16( -1.064064 );
-  bossShotDeltaY[6] = FIX16( 1.693448 );
-  bossShotDeltaX[7] = FIX16( -1.414214 );
-  bossShotDeltaY[7] = FIX16( 1.414214 );
+  bossShotDeltaX[3] =  0.223929;
+  bossShotDeltaY[3] =  1.987424;
+
 
   // Setup Sound
   XGM_setPCM(  SND_LASER1, laser1, sizeof(laser1));
@@ -689,31 +684,28 @@ int main(bool hard)
 
 
   VDP_setScreenWidth320();
-  // set colors
+  // set palettes
   PAL_setPalette( PAL0, planea_pal.data, CPU );
   PAL_setPalette( PAL1, planeb_pal.data, CPU );
   PAL_setPalette( PAL2, shipsheet_pal.data, CPU );
   PAL_setPalette( PAL3, shots_pal.data, CPU );
 
-  //PAL_getColors( 1, &palette[0], 15);
   memcpy(&palette[0], planea_pal.data, 32 );
 
   // set scrolling mode to LINE for horizontal and TILE for vertical
   VDP_setScrollingMode(HSCROLL_LINE, VSCROLL_2TILE);
 
+  // Setup background 
   // get tile positions in VRAM.
   int ind = TILE_USER_INDEX;
+  // Load the plane  into VRAM
   int indexA = ind;
-  // Load the plane tiles into VRAM
   VDP_loadTileSet(planea.tileset, ind, CPU);
-
   int indexB = ind + planea.tileset->numTile; // AND get next position in VRAM ;
   VDP_loadTileSet(planeb.tileset, indexB, CPU);
 
   // Simple image for BG_B, so just draw it.
   VDP_drawImageEx(BG_B, &planeb, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, indexB), 0, 0, FALSE, TRUE);
-
-
   // setup the tiles
   VDP_setTileMapEx(BG_A, planea.tilemap, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, indexA),
       0,               // Plane X destination
@@ -723,20 +715,15 @@ int main(bool hard)
       PLANE_MAX_TILE, // width  (went with 64 becasue default width is 64.  Viewable screen is 40)
       28,             // height
       CPU);
-
-
-  SYS_doVBlankProcess();
-
-
-
-  shipsheet_ind = indexB + planeb.tileset->numTile; // AND get next position in VRAM ;
-
+  
+  // Load sprite tilesest
+  shipsheet_ind = indexB + planeb.tileset->numTile; 
   VDP_loadTileData( shipsheet_tileset.tiles, // tile data pointer
       shipsheet_ind,    // index
-      80,        // number of tiles to load
+      80,               // number of tiles to load
       DMA_QUEUE         // transfer method
       );
-  boomsheet_ind = shipsheet_ind + shipsheet_tileset.numTile; // AND get next position in VRAM ;
+  boomsheet_ind = shipsheet_ind + shipsheet_tileset.numTile; 
   VDP_loadTileData( boomsheet_tileset.tiles, // tile data pointer
       boomsheet_ind,    // index
       112,        // number of tiles to load
@@ -762,26 +749,20 @@ int main(bool hard)
   }
   SYS_enableInts();
 
-  // SPRITES
-  //SPR_init();
 
-  player.pos_x = FIX16(144);
-  player.pos_y = FIX16(160);
-  player.vel_x = FIX16(0);
-  player.vel_y = FIX16(0);
-  player.hb.x1 = FIX16(2);
-  player.hb.y1 = FIX16(12);
-  player.hb.x2 = FIX16(30);
-  player.hb.y2 = FIX16(26);
+  player.pos_x = 144;
+  player.pos_y = 160;
+  player.vel_x = 0;
+  player.vel_y = 0;
+  player.hb.x1 = 2;
+  player.hb.y1 = 12;
+  player.hb.x2 = 30;
+  player.hb.y2 = 26;
   player.active = TRUE;
-
-  //player.sprite  = SPR_addSprite( &ship, player.pos_x, player.pos_y, TILE_ATTR( PAL2, 0, FALSE,FALSE ));
-  //SPR_setAnim( player.sprite, playerAnim );
 
   createSprites();
   
- 
-
+  // setup joystick
   JOY_init();
   JOY_setEventHandler( &myJoyHandler );
 
@@ -939,14 +920,10 @@ int main(bool hard)
     boss_rvent_hb.x2 = boss_rvent_hb.x1 + 32;
     boss_rvent_hb.y2 = boss_rvent_hb.y1 + 32;
 
-
-
-    //update();
-    //checkCollisions();
-    //SPR_update();
-    // let SGDK do its thing
-    // set SGDK scrolling functions to fake the rotation.
-
+    update();
+    checkCollisions();
+    
+    // queu it up.
     SYS_disableInts();
     {
       VDP_setVerticalScrollTile(BG_A, 0, vScrollUpperA, 20, DMA_QUEUE);
