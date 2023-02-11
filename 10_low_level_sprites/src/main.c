@@ -22,6 +22,7 @@ int main(bool hard)
   // load the palettes
   PAL_setPalette( PAL1, ship_pal.data, CPU );
   PAL_setPalette( PAL2, rock_pal.data, CPU );
+  PAL_setPalette( PAL3, numbers_pal.data, CPU );
 
   int ind = TILE_USER_INDEX;
 
@@ -44,6 +45,14 @@ int main(bool hard)
       4,        // number of tiles to load 
       DMA_QUEUE         // transfer method
       );
+
+  int numbers_ind = rock_ind + 4; // 4 because we loaded 4 tiles for rock
+  VDP_loadTileData( numbers_tileset.tiles, // tile data pointer
+      numbers_ind,    // index
+      32,        // number of tiles to load 
+      DMA_QUEUE         // transfer method
+      );
+
 
   VDP_setSpriteFull(0, // sprite ID ( 0 to 79 )
       40,   // X in screen coords
@@ -100,8 +109,21 @@ int main(bool hard)
       );
 
 
+  VDP_setSpriteFull(4, // sprite ID ( 0 to 79 )
+      120,   // X in screen coords
+      40,   // Y in screen coords
+      SPRITE_SIZE(2,2), // 1x1 to up to 4x4
+      TILE_ATTR_FULL(PAL3,    // PALette 
+        1,  // priority
+        0,  // Flip Vertical
+        0,  // Flip Horizontal
+        numbers_ind + 28 // index
+        ) ,
+      0
+      );
+
   // tell VDP to draw sprites
-  VDP_updateSprites(4, DMA_QUEUE_COPY);
+  VDP_updateSprites(5, DMA_QUEUE_COPY);
  
   //  VDP_updateSprites(80, // number of sprites to transfer starting at index 0
    //   DMA_QUEUE);
