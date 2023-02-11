@@ -121,7 +121,9 @@ s16 playerAnim = 5;
 CP_SPRITE playerShots[ MAX_PLAYER_SHOTS ];
 
 u16 totalSprites = 33;
-
+u16 shipsheet_ind = 0;
+u16 boomsheet_ind = 0;
+u16 shots_ind = 0;
 
 CP_SPRITE bossShots[MAX_BOSS_SHOTS];
 CP_HITBOX boss_lgun_hb;
@@ -568,101 +570,7 @@ static void createExplosions() {
 
 }
 
-
-int main(bool hard)
-{
-
-  // setup shots
-  // head shot
-  bossShotDeltaX[0] = FIX16( 1.414214 );
-  bossShotDeltaY[0] = FIX16( 1.414214 );
-  u16 shot = 0;
-  bossShotDeltaX[1] = FIX16( 1.064064 );
-  bossShotDeltaY[1] = FIX16( 1.693448 );
-  bossShotDeltaX[2] = FIX16( 0.660558 );
-  bossShotDeltaY[2] = FIX16( 1.887767 );
-  bossShotDeltaX[3] = FIX16( 0.223929 );
-  bossShotDeltaY[3] = FIX16( 1.987424 );
-
-  bossShotDeltaX[4] = FIX16( -0.223929 );
-  bossShotDeltaY[4] = FIX16( 1.987424 );
-  bossShotDeltaX[5] = FIX16( -0.660558 );
-  bossShotDeltaY[5] = FIX16( 1.887767 );
-  bossShotDeltaX[6] = FIX16( -1.064064 );
-  bossShotDeltaY[6] = FIX16( 1.693448 );
-  bossShotDeltaX[7] = FIX16( -1.414214 );
-  bossShotDeltaY[7] = FIX16( 1.414214 );
-
-  // Setup Sound
-  XGM_setPCM(  SND_LASER1, laser1, sizeof(laser1));
-  XGM_setPCM(  SND_LASER2, laser2, sizeof(laser2));
-  XGM_setPCM(  SND_LASERX_4, laserx_4, sizeof(laserx_4));
-  XGM_setPCM(  SND_EXPLOSION, explosion6, sizeof(explosion6));
-
-
-  VDP_setScreenWidth320();
-  // set colors
-  PAL_setPalette( PAL0, planea_pal.data, CPU );
-  PAL_setPalette( PAL1, planeb_pal.data, CPU );
-  PAL_setPalette( PAL2, shipsheet_pal.data, CPU );
-  PAL_setPalette( PAL3, shots_pal.data, CPU );
-
-  //PAL_getColors( 1, &palette[0], 15);
-  memcpy(&palette[0], planea_pal.data, 32 );
-
-  // set scrolling mode to LINE for horizontal and TILE for vertical
-  VDP_setScrollingMode(HSCROLL_LINE, VSCROLL_2TILE);
-
-  // get tile positions in VRAM.
-  int ind = TILE_USER_INDEX;
-  int indexA = ind;
-  // Load the plane tiles into VRAM
-  VDP_loadTileSet(planea.tileset, ind, CPU);
-
-  int indexB = ind + planea.tileset->numTile; // AND get next position in VRAM ;
-  VDP_loadTileSet(planeb.tileset, indexB, CPU);
-
-  // Simple image for BG_B, so just draw it.
-  VDP_drawImageEx(BG_B, &planeb, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, indexB), 0, 0, FALSE, TRUE);
-
-
-  // setup the tiles
-  VDP_setTileMapEx(BG_A, planea.tilemap, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, indexA),
-      0,               // Plane X destination
-      0,               // plane Y destination
-      0,               // Region X start position
-      0,               // Region Y start position
-      PLANE_MAX_TILE, // width  (went with 64 becasue default width is 64.  Viewable screen is 40)
-      28,             // height
-      CPU);
-
-
-  SYS_doVBlankProcess();
-
-
-
-  int shipsheet_ind = indexB + planeb.tileset->numTile; // AND get next position in VRAM ;
-
-  VDP_loadTileData( shipsheet_tileset.tiles, // tile data pointer
-      shipsheet_ind,    // index
-      80,        // number of tiles to load
-      DMA_QUEUE         // transfer method
-      );
-  int boomsheet_ind = shipsheet_ind + shipsheet_tileset.numTile; // AND get next position in VRAM ;
-  VDP_loadTileData( boomsheet_tileset.tiles, // tile data pointer
-      boomsheet_ind,    // index
-      112,        // number of tiles to load
-      DMA_QUEUE         // transfer method
-      );
-  int shots_ind = boomsheet_ind + boomsheet_tileset.numTile; // AND get next position in VRAM ;
-  VDP_loadTileData( shots_tileset.tiles, // tile data pointer
-      shots_ind,    // index
-      4,        // number of tiles to load
-      DMA_QUEUE         // transfer method
-      );
-
-
-
+void createSprites() {
   s16 x = 160;
   s16 y = 100;
   s16 shipframe_offset = 32;
@@ -745,6 +653,104 @@ int main(bool hard)
   totalSprites = 52;
 
   VDP_updateSprites(totalSprites, DMA_QUEUE_COPY);
+  SYS_doVBlankProcess();
+}
+
+
+int main(bool hard)
+{
+
+  // setup shots
+  // head shot
+  bossShotDeltaX[0] = FIX16( 1.414214 );
+  bossShotDeltaY[0] = FIX16( 1.414214 );
+  u16 shot = 0;
+  bossShotDeltaX[1] = FIX16( 1.064064 );
+  bossShotDeltaY[1] = FIX16( 1.693448 );
+  bossShotDeltaX[2] = FIX16( 0.660558 );
+  bossShotDeltaY[2] = FIX16( 1.887767 );
+  bossShotDeltaX[3] = FIX16( 0.223929 );
+  bossShotDeltaY[3] = FIX16( 1.987424 );
+
+  bossShotDeltaX[4] = FIX16( -0.223929 );
+  bossShotDeltaY[4] = FIX16( 1.987424 );
+  bossShotDeltaX[5] = FIX16( -0.660558 );
+  bossShotDeltaY[5] = FIX16( 1.887767 );
+  bossShotDeltaX[6] = FIX16( -1.064064 );
+  bossShotDeltaY[6] = FIX16( 1.693448 );
+  bossShotDeltaX[7] = FIX16( -1.414214 );
+  bossShotDeltaY[7] = FIX16( 1.414214 );
+
+  // Setup Sound
+  XGM_setPCM(  SND_LASER1, laser1, sizeof(laser1));
+  XGM_setPCM(  SND_LASER2, laser2, sizeof(laser2));
+  XGM_setPCM(  SND_LASERX_4, laserx_4, sizeof(laserx_4));
+  XGM_setPCM(  SND_EXPLOSION, explosion6, sizeof(explosion6));
+
+
+  VDP_setScreenWidth320();
+  // set colors
+  PAL_setPalette( PAL0, planea_pal.data, CPU );
+  PAL_setPalette( PAL1, planeb_pal.data, CPU );
+  PAL_setPalette( PAL2, shipsheet_pal.data, CPU );
+  PAL_setPalette( PAL3, shots_pal.data, CPU );
+
+  //PAL_getColors( 1, &palette[0], 15);
+  memcpy(&palette[0], planea_pal.data, 32 );
+
+  // set scrolling mode to LINE for horizontal and TILE for vertical
+  VDP_setScrollingMode(HSCROLL_LINE, VSCROLL_2TILE);
+
+  // get tile positions in VRAM.
+  int ind = TILE_USER_INDEX;
+  int indexA = ind;
+  // Load the plane tiles into VRAM
+  VDP_loadTileSet(planea.tileset, ind, CPU);
+
+  int indexB = ind + planea.tileset->numTile; // AND get next position in VRAM ;
+  VDP_loadTileSet(planeb.tileset, indexB, CPU);
+
+  // Simple image for BG_B, so just draw it.
+  VDP_drawImageEx(BG_B, &planeb, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, indexB), 0, 0, FALSE, TRUE);
+
+
+  // setup the tiles
+  VDP_setTileMapEx(BG_A, planea.tilemap, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, indexA),
+      0,               // Plane X destination
+      0,               // plane Y destination
+      0,               // Region X start position
+      0,               // Region Y start position
+      PLANE_MAX_TILE, // width  (went with 64 becasue default width is 64.  Viewable screen is 40)
+      28,             // height
+      CPU);
+
+
+  SYS_doVBlankProcess();
+
+
+
+  shipsheet_ind = indexB + planeb.tileset->numTile; // AND get next position in VRAM ;
+
+  VDP_loadTileData( shipsheet_tileset.tiles, // tile data pointer
+      shipsheet_ind,    // index
+      80,        // number of tiles to load
+      DMA_QUEUE         // transfer method
+      );
+  boomsheet_ind = shipsheet_ind + shipsheet_tileset.numTile; // AND get next position in VRAM ;
+  VDP_loadTileData( boomsheet_tileset.tiles, // tile data pointer
+      boomsheet_ind,    // index
+      112,        // number of tiles to load
+      DMA_QUEUE         // transfer method
+      );
+  shots_ind = boomsheet_ind + boomsheet_tileset.numTile; // AND get next position in VRAM ;
+  VDP_loadTileData( shots_tileset.tiles, // tile data pointer
+      shots_ind,    // index
+      4,        // number of tiles to load
+      DMA_QUEUE         // transfer method
+      );
+
+
+
 
   // Setup interrupt handlers
   SYS_disableInts();
@@ -772,9 +778,9 @@ int main(bool hard)
   //player.sprite  = SPR_addSprite( &ship, player.pos_x, player.pos_y, TILE_ATTR( PAL2, 0, FALSE,FALSE ));
   //SPR_setAnim( player.sprite, playerAnim );
 
-  //createShipShots();
-  //createExplosions(); // for some reason order matters?  Am I blowing past max sprite in some way?  max 80 sprites but not 32x32??
-  //createBossShots();
+  createSprites();
+  
+ 
 
   JOY_init();
   JOY_setEventHandler( &myJoyHandler );
