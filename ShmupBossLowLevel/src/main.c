@@ -681,10 +681,10 @@ int main(bool hard)
       );
 
 
-  for( u16 i=1; i< 10; ++i ) {
+  for( u16 i=1; i< 13; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
-        32 * i,   // X in screen coords
-        60,   // Y in screen coords
+        24 * (i-1),   // X in screen coords
+        20 + (i<8? 0:32) ,   // Y in screen coords
         SPRITE_SIZE(4,4), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
           1,  // priority
@@ -696,10 +696,10 @@ int main(bool hard)
         );
   }
 
-  for( u16 i=10; i< 16; ++i ) {
+  for( u16 i=13; i< 22; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
         8 * i,   // X in screen coords
-        50,   // Y in screen coords
+        10,   // Y in screen coords
         SPRITE_SIZE(1,1), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
           1,  // priority
@@ -711,10 +711,10 @@ int main(bool hard)
         );
   }
 
-  for( u16 i=16; i< 32; ++i ) {
+  for( u16 i=22; i< 42; ++i ) {
     VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
         8 * (i-15),   // X in screen coords
-        110,  // Y in screen coords
+        160,  // Y in screen coords
         SPRITE_SIZE(1,1), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
           1,  // priority
@@ -726,6 +726,23 @@ int main(bool hard)
         );
   }
 
+  for( u16 i=42; i< 52; ++i ) {
+    VDP_setSpriteFull(i, // sprite ID ( 0 to 79 )
+        8 * (i-30),   // X in screen coords
+        180,  // Y in screen coords
+        SPRITE_SIZE(1,1), // 1x1 to up to 4x4
+        TILE_ATTR_FULL(PAL3,    // PALette
+          1,  // priority
+          0,  // Flip Vertical
+          0,  // Flip Horizontal
+          shots_ind + 3 // index
+          ),
+        i+1 
+        );
+  }
+
+
+  totalSprites = 52;
 
   VDP_updateSprites(totalSprites, DMA_QUEUE_COPY);
 
