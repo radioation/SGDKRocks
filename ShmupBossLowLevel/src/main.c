@@ -527,24 +527,39 @@ static void checkCollisions() {
     if( boomTicks > 10) {
       boomTicks = 0;
     }
-    if( boss_lgun_hb.hitpoints <=0 && boomTicks == 10 ) {
+    bool goBoom = FALSE;
+    if( explosions[1].active == FALSE && boss_lgun_hb.hitpoints <=0 && boomTicks == 10 ) {
       explosions[1].pos_x = lgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
       explosions[1].pos_y = lgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
+      explosions[1].active = TRUE;
+      explosions[1].tileIndex = 0;
+      goBoom = TRUE;
     }
-    if( boss_rgun_hb.hitpoints <=0  && boomTicks == 10 ) {
+    if( explosions[2].active == FALSE && boss_rgun_hb.hitpoints <=0  && boomTicks == 3 ) {
       explosions[2].pos_x = rgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
       explosions[2].pos_y = rgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
+      explosions[2].active = TRUE;
+      explosions[2].tileIndex = 0;
+      goBoom = TRUE;
     }
 
-    if( boss_lvent_hb.hitpoints <=0 && boomTicks == 5 ) {
+    if( explosions[3].active == FALSE && boss_lvent_hb.hitpoints <=0 && ( boomTicks == 2  || boomTicks == 7)) {
       explosions[3].pos_x = lvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
       explosions[3].pos_y = lvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
+      explosions[3].active = TRUE;
+      explosions[3].tileIndex = 0;
+      goBoom = TRUE;
     }
-    if( boss_rvent_hb.hitpoints <=0  && boomTicks == 5 ) {
+    if( explosions[4].active == FALSE && boss_rvent_hb.hitpoints <=0  && (boomTicks == 4 || boomTicks == 9 )) {
       explosions[4].pos_x = rvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
       explosions[4].pos_y = rvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
+      explosions[4].active = TRUE;
+      explosions[4].tileIndex = 0;
+      goBoom = TRUE;
     }
-
+    if( goBoom == TRUE ) {
+      XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
+    }
   }
   //
 }
