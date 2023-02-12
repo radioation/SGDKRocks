@@ -110,10 +110,10 @@ u16 shotType = 0;
 
 CP_SPRITE bossShots[MAX_BOSS_SHOTS];
 CP_HITBOX boss_lgun_hb;
-//CP_HITBOX boss_mgun_hb;
 CP_HITBOX boss_rgun_hb;
 CP_HITBOX boss_lvent_hb;
 CP_HITBOX boss_rvent_hb;
+CP_HITBOX bottom_hb;
 
 s16 bossShotDeltaX[6];
 s16 bossShotDeltaY[6];
@@ -187,27 +187,61 @@ static void myJoyHandler( u16 joy, u16 changed, u16 state)
         if( playerShots[i].active == FALSE ) {
           playerShots[i].active = TRUE;
           // set its starting position
-          playerShots[i].pos_x = player.pos_x+ 15;
-          playerShots[i].pos_y = player.pos_y;
-          switch( addedShot ) {
-            case 0:
-              playerShots[i].vel_x =  0;
-              playerShots[i].vel_y = -6;
-              break;
+          if( shotType == 0 ) {
+            playerShots[i].pos_x = player.pos_x+ 12;
+            playerShots[i].pos_y = player.pos_y;
+            playerShots[i].tileIndex = 2;
+            switch( addedShot ) {
+              case 0:
+                playerShots[i].vel_x =  0;
+                playerShots[i].vel_y = -6;
+                break;
 
-            case 1:
-              playerShots[i].vel_x = -2;
-              playerShots[i].vel_y = -5;
-              break;
+              case 1:
+                playerShots[i].vel_x = -2;
+                playerShots[i].vel_y = -5;
+                break;
 
-            case 2:
-              playerShots[i].vel_x = 2;
-              playerShots[i].vel_y = -5;
+              case 2:
+                playerShots[i].vel_x = 2;
+                playerShots[i].vel_y = -5;
+                break;
+            }
+            ++addedShot;
+            if( addedShot >= 3 ) {
               break;
-          }
-          ++addedShot;
-          if( addedShot >= 3 ) {
-            break;
+            }
+          } else {
+            playerShots[i].pos_x = player.pos_x+ 12;
+            playerShots[i].tileIndex = 1;
+            switch( addedShot ) {
+              case 0:
+                playerShots[i].vel_x =  0;
+                playerShots[i].vel_y = -5;
+                playerShots[i].pos_y = player.pos_y;
+                break;
+
+              case 1:
+                playerShots[i].vel_x = 0;
+                playerShots[i].vel_y = 5;
+                playerShots[i].pos_y = player.pos_y +32;
+                break;
+
+              case 2:
+                playerShots[i].vel_x = 0;
+                playerShots[i].vel_y = -5;
+                playerShots[i].pos_y = player.pos_y+8;
+                break;
+              case 3:
+                playerShots[i].vel_x = 0;
+                playerShots[i].vel_y = 5;
+                playerShots[i].pos_y = player.pos_y +24;
+                break;
+            }
+            ++addedShot;
+            if( addedShot >= 4 ) {
+              break;
+            }
           }
         }
       }
@@ -294,7 +328,7 @@ static void update() {
     if( playerShots[i].active == TRUE ) {
       playerShots[i].pos_x +=  playerShots[i].vel_x;
       playerShots[i].pos_y +=  playerShots[i].vel_y;
-      if(playerShots[i].pos_y  < 0 ) {
+      if(playerShots[i].pos_y  < 0 || playerShots[i].pos_y > 240 ) {
         playerShots[i].active = FALSE;
         playerShots[i].pos_y = 250;
       }
@@ -438,6 +472,26 @@ static void checkCollisions() {
       }
     }
 
+    if( bottom_hb.hitpoints > 0 &&
+        playerShots[j].active == TRUE &&
+        bottom_hb.x1 < (playerShots[j].pos_x + 4) &&
+        bottom_hb.x2 > (playerShots[j].pos_x + 4) &&
+        bottom_hb.y1 < (playerShots[j].pos_y + 4) &&
+        bottom_hb.y2 > (playerShots[j].pos_y + 4)  )
+    {
+      --bottom_hb.hitpoints;
+      explosions[5].pos_x = playerShots[j].pos_x - 16;
+      explosions[5].pos_y = playerShots[j].pos_y - 16;
+      explosions[5].active = TRUE;
+      explosions[5].tileIndex = 0;
+      XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
+      playerShots[j].active = FALSE;
+      playerShots[j].pos_y = 250;
+      if( flashLower < 1 ) {
+        flashLower = 3;
+      }
+    }
+
     ++boomTicks;
     if( boomTicks > 10) {
       boomTicks = 0;
@@ -458,6 +512,7 @@ static void checkCollisions() {
       goBoom = TRUE;
     }
 
+
     if( explosions[3].active == FALSE && boss_lvent_hb.hitpoints <=0 && ( boomTicks == 2  || boomTicks == 7)) {
       explosions[3].pos_x = lvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
       explosions[3].pos_y = lvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
@@ -470,6 +525,14 @@ static void checkCollisions() {
       explosions[4].pos_y = rvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
       explosions[4].active = TRUE;
       explosions[4].tileIndex = 0;
+      goBoom = TRUE;
+    }
+
+    if( explosions[5].active == FALSE && bottom_hb.hitpoints <=0  && boomTicks == 3 ) {
+      explosions[5].pos_x = marray[currLowerAngle + currLowerAngle]-16 + xLowerOffset;
+      explosions[5].pos_y = marray[currLowerAngle + currLowerAngle + 1]-16 - yLowerOffset;
+      explosions[5].active = TRUE;
+      explosions[5].tileIndex = 0;
       goBoom = TRUE;
     }
     if( goBoom == TRUE ) {
@@ -742,10 +805,10 @@ int main(bool hard)
   JOY_setEventHandler( &myJoyHandler );
 
   boss_lgun_hb.hitpoints = 150;
-  //boss_mgun_hb.hitpoints = 150;
   boss_rgun_hb.hitpoints = 150;
   boss_lvent_hb.hitpoints = 100;
   boss_rvent_hb.hitpoints = 100;
+  bottom_hb.hitpoints = 150;
 
   while (TRUE)
   {
@@ -902,6 +965,10 @@ int main(bool hard)
     boss_rvent_hb.x2 = boss_rvent_hb.x1 + 32;
     boss_rvent_hb.y2 = boss_rvent_hb.y1 + 32;
 
+    bottom_hb.x1 = larray[currLowerAngle + currLowerAngle]-16 + xLowerOffset;
+    bottom_hb.y1 = larray[currLowerAngle + currLowerAngle + 1]-16 - yLowerOffset;
+    bottom_hb.x2 = bottom_hb.x1 + 59;
+    bottom_hb.y2 = bottom_hb.y1 + 16;
     update();
     checkCollisions();
 
@@ -924,6 +991,9 @@ int main(bool hard)
             playerShots[i].spriteIndex,
             playerShots[i].pos_x,
             playerShots[i].pos_y
+            );
+        VDP_setSpriteTile(playerShots[i].spriteIndex, 
+            shots_ind + playerShots[i].tileIndex  
             );
       }
       for( int i=0; i < MAX_EXPLOSIONS; ++i ) {
