@@ -82,7 +82,7 @@ typedef struct {
 } CP_HITBOX;
 
 typedef struct {
-  Sprite *sprite;
+  u16 spriteIndex;
   s16 pos_x;
   s16 pos_y;
   s16 vel_x;
@@ -563,9 +563,8 @@ static void setupExplosions() {
     explosions[i].hb.y2 = 0;
     explosions[i].frameSize = 16;
     explosions[i].tileIndex = 0;
-  }
 
-  for( u16 i=0; i< MAX_EXPLOSIONS; ++i ) {
+    explosions[i].spriteIndex = totalSprites;
     VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
         24 * i,   // X in screen coords
         20 + (i<8? 0:32) ,   // Y in screen coords
@@ -587,6 +586,7 @@ static void setupBossShots() {
   s16 ypos = 230;
 
   for( u16 i=0; i < MAX_BOSS_SHOTS; ++i ) {
+    bossShots[i].spriteIndex = totalSprites;
     bossShots[i].pos_x = xpos;
     bossShots[i].pos_y = ypos;
     bossShots[i].vel_x = 0;
@@ -598,9 +598,7 @@ static void setupBossShots() {
     bossShots[i].hb.y2 = 8;
     bossShots[i].frameSize = 1;
     bossShots[i].tileIndex = 0;
-  }
 
-  for( u16 i=0; i< MAX_BOSS_SHOTS; ++i ) {
     VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
         8 * i,   // X in screen coords
         10,   // Y in screen coords
@@ -635,9 +633,8 @@ static void setupPlayerShots() {
     playerShots[i].frameSize = 1;
     playerShots[i].tileIndex = 2;
 
-  }
 
-  for( u16 i=0; i< MAX_PLAYER_SHOTS; ++i ) {
+    playerShots[i].spriteIndex = totalSprites;
     VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
         8 * i,   // X in screen coords
         160,  // Y in screen coords
@@ -646,7 +643,7 @@ static void setupPlayerShots() {
           1,  // priority
           0,  // Flip Vertical
           0,  // Flip Horizontal
-          shots_ind + ( i%2==0 ? 1:2) // index
+          shots_ind + playerShots[i].tileIndex
           ),
         totalSprites +1 
         );
@@ -947,7 +944,6 @@ int main(bool hard)
     {
       VDP_setVerticalScrollTile(BG_A, 0, vScrollUpperA, 20, DMA_QUEUE);
       VDP_setHorizontalScrollLine(BG_A, 0, hScrollA, 224, DMA_QUEUE);
-      //if( ticks % 2 == 0 ) {
       VDP_setVerticalScrollTile(BG_B, 0, vScrollB, 20, DMA_QUEUE); // use array to set plane offsets
                                                                    //} else {
                                                                    //}
@@ -956,6 +952,13 @@ int main(bool hard)
           player.pos_x,   // X in screen coords
           player.pos_y   // Y in screen coords
           );
+      for( int i=0; i < MAX_PLAYER_SHOTS; ++i ) {
+        VDP_setSpritePosition(
+            playerShots[i].spriteIndex,
+            playerShots[i].pos_x,
+            playerShots[i].pos_y
+            );
+      }
       VDP_updateSprites(totalSprites, DMA_QUEUE);
     }
     SYS_enableInts();
