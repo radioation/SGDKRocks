@@ -959,6 +959,15 @@ int main(bool hard)
             playerShots[i].pos_y
             );
       }
+      for( int i=0; i < MAX_BOSS_SHOTS; ++i ) {
+        VDP_setSpritePosition(
+            bossShots[i].spriteIndex,
+            bossShots[i].pos_x,
+            bossShots[i].pos_y
+            );
+      }
+
+
       VDP_updateSprites(totalSprites, DMA_QUEUE);
     }
     SYS_enableInts();
