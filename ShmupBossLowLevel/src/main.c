@@ -131,8 +131,8 @@ CP_HITBOX boss_rgun_hb;
 CP_HITBOX boss_lvent_hb;
 CP_HITBOX boss_rvent_hb;
 
-s16 bossShotDeltaX[8];
-s16 bossShotDeltaY[8];
+s16 bossShotDeltaX[6];
+s16 bossShotDeltaY[6];
 
 CP_SPRITE explosions[MAX_EXPLOSIONS];
 u16 currentExplosion = 0;
@@ -219,7 +219,7 @@ static void fireBossShots() {
 */
 
   if( fired ) {
-    //XGM_startPlayPCM(SND_LASERX_4,10,SOUND_PCM_CH4);
+    XGM_startPlayPCM(SND_LASERX_4,10,SOUND_PCM_CH4);
   }
 }
 
@@ -233,7 +233,7 @@ static void myJoyHandler( u16 joy, u16 changed, u16 state)
   if (joy == JOY_1)
   {
     if (state & BUTTON_A) {
-      //XGM_startPlayPCM(SND_LASER1,1,SOUND_PCM_CH2);
+      XGM_startPlayPCM(SND_LASER1,1,SOUND_PCM_CH2);
       u16 addedShot = 0;
       for( u16 i=0; i < MAX_PLAYER_SHOTS; ++i ) {
         if( playerShots[i].active == FALSE ) {
@@ -388,10 +388,9 @@ static void update() {
   for( u16 i=0; i < MAX_EXPLOSIONS; ++i ) {
     if( explosions[i].active == TRUE ) {
       explosions[i].tileIndex += explosions[i].frameSize;
-      if( explosions[i].tileIndex < 6 ) {
-        //SPR_setFrame( explosions[i].sprite, explosions[i].tileIndex );
-      }
-      else {
+      if( explosions[i].tileIndex == 96) {
+        explosions[i].pos_y = 240;
+      } else if( explosions[i].tileIndex > 96) {
         explosions[i].active = FALSE;
         //SPR_setVisibility( explosions[i].sprite, HIDDEN);
       }
@@ -412,6 +411,9 @@ static void checkCollisions() {
       {
         explosions[0].pos_x = bossShots[i].pos_x - 12;
         explosions[0].pos_y = bossShots[i].pos_y - 12;
+        explosions[0].active = TRUE;
+        explosions[0].tileIndex = 0;
+        XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
         bossShots[i].active = FALSE;
         bossShots[i].pos_y = 250;
         //SPR_setVisibility( bossShots[i].sprite, HIDDEN);
@@ -431,6 +433,9 @@ static void checkCollisions() {
       --boss_lgun_hb.hitpoints;
       explosions[1].pos_x = playerShots[j].pos_x - 16;
       explosions[1].pos_y = playerShots[j].pos_y - 16;
+      explosions[1].active = TRUE;
+      explosions[1].tileIndex = 0;
+      XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
       playerShots[j].active = FALSE;
       playerShots[j].pos_y = 250;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
@@ -448,6 +453,9 @@ static void checkCollisions() {
       --boss_rgun_hb.hitpoints;
       explosions[2].pos_x = playerShots[j].pos_x - 16;
       explosions[2].pos_y = playerShots[j].pos_y - 16;
+      explosions[2].active = TRUE;
+      explosions[2].tileIndex = 0;
+      XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
       playerShots[j].active = FALSE;
       playerShots[j].pos_y = 250;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
@@ -484,6 +492,9 @@ static void checkCollisions() {
       --boss_lvent_hb.hitpoints;
       explosions[3].pos_x = playerShots[j].pos_x - 16;
       explosions[3].pos_y = playerShots[j].pos_y - 16;
+      explosions[3].active = TRUE;
+      explosions[3].tileIndex = 0;
+      XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
       playerShots[j].active = FALSE;
       playerShots[j].pos_y = 250;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
@@ -501,6 +512,9 @@ static void checkCollisions() {
       --boss_rvent_hb.hitpoints;
       explosions[4].pos_x = playerShots[j].pos_x - 16;
       explosions[4].pos_y = playerShots[j].pos_y - 16;
+      explosions[4].active = TRUE;
+      explosions[4].tileIndex = 0;
+      XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
       playerShots[j].active = FALSE;
       playerShots[j].pos_y = 250;
       //SPR_setVisibility( playerShots[j].sprite, HIDDEN);
@@ -582,13 +596,13 @@ static void setupExplosions() {
     explosions[i].hb.x2 = 0;
     explosions[i].hb.y2 = 0;
     explosions[i].frameSize = 16; 
-    explosions[i].tileIndex = 7 + 10;
+    explosions[i].tileIndex = 0;
 
 
     explosions[i].spriteIndex = totalSprites;
     VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
-        24 * i,   // X in screen coords
-        20 + (i<8? 0:32) ,   // Y in screen coords
+        explosions[i].pos_x,
+        explosions[i].pos_y,
         SPRITE_SIZE(4,4), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
           1,  // priority
@@ -621,8 +635,8 @@ static void setupBossShots() {
     bossShots[i].tileIndex = 0;
 
     VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
-        8 * i,   // X in screen coords
-        10,   // Y in screen coords
+        bossShots[i].pos_x,
+        bossShots[i].pos_y,
         SPRITE_SIZE(1,1), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
           1,  // priority
@@ -657,8 +671,8 @@ static void setupPlayerShots() {
 
     playerShots[i].spriteIndex = totalSprites;
     VDP_setSpriteFull(totalSprites, // sprite ID ( 0 to 79 )
-        8 * i,   // X in screen coords
-        160,  // Y in screen coords
+        playerShots[i].pos_x,
+        playerShots[i].pos_y,
         SPRITE_SIZE(1,1), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL3,    // PALette
           1,  // priority
@@ -719,8 +733,15 @@ int main(bool hard)
   bossShotDeltaY[2] =  2;
 
 
-  bossShotDeltaX[3] =  0.223929;
-  bossShotDeltaY[3] =  1.987424;
+  bossShotDeltaX[3] =  1;
+  bossShotDeltaY[3] =  2;
+
+  bossShotDeltaX[4] =  -1;
+  bossShotDeltaY[4] =  2;
+
+  bossShotDeltaX[5] =  0.223929;
+  bossShotDeltaY[5] =  1.987424;
+
 
 
   // Setup Sound
@@ -987,11 +1008,16 @@ int main(bool hard)
             );
       }
       for( int i=0; i < MAX_EXPLOSIONS; ++i ) {
-        VDP_setSpritePosition(
-            explosions[i].spriteIndex,
-            explosions[i].pos_x,
-            explosions[i].pos_y
-            );
+        if( explosions[i].active == TRUE ) {
+          VDP_setSpritePosition(
+              explosions[i].spriteIndex,
+              explosions[i].pos_x,
+              explosions[i].pos_y
+              );
+          VDP_setSpriteTile(explosions[i].spriteIndex, 
+              boomsheet_ind + explosions[i].tileIndex  
+              );
+        }
       }
       for( int i=0; i < MAX_BOSS_SHOTS; ++i ) {
         VDP_setSpritePosition(
