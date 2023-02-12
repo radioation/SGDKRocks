@@ -95,6 +95,8 @@ typedef struct {
   s16 frameSize; 
   s16 tileIndex; 
 
+  u16 ticks;
+
 } CP_SPRITE;
 
 #define PLAYER_FRAME_COUNT  16
@@ -136,7 +138,10 @@ s16 bossShotDeltaY[8];
 CP_SPRITE explosions[MAX_EXPLOSIONS];
 u16 currentExplosion = 0;
 
-u16 ticks = 0;
+u16 bossTicks = 0;
+u16 boomTicks = 0;
+u16 upperTicks = 0;
+u16 lowerTicks = 0;
 
 s16 currUpperAngle = 0;
 s16 upperStepDir = 1;
@@ -372,7 +377,9 @@ static void update() {
     }
   }
 
-  if( ticks % 133 == 0 )  {
+  ++bossTicks;
+  if( bossTicks == 255 )  {
+    bossTicks = 0;
     fireBossShots();
   }
 
@@ -490,17 +497,18 @@ static void checkCollisions() {
       }
     }
 
-    if( boss_lgun_hb.hitpoints <=0 && ticks % 14 == 0 ) {
+    ++boomTicks;
+    if( boss_lgun_hb.hitpoints <=0 && boomTicks == 16 ) {
       addExplosion(  lgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset, lgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
-    if( boss_rgun_hb.hitpoints <=0  && ticks % 14 == 0) {
+    if( boss_rgun_hb.hitpoints <=0  && boomTicks == 16 ) {
       addExplosion(  rgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset,  rgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
 
-    if( boss_lvent_hb.hitpoints <=0 && ticks % 8 == 0 ) {
+    if( boss_lvent_hb.hitpoints <=0 && boomTicks == 8 ) {
       addExplosion(  lvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset,  lvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
-    if( boss_rvent_hb.hitpoints <=0  && ticks % 8 == 0) {
+    if( boss_rvent_hb.hitpoints <=0  && boomTicks == 8 ) {
       addExplosion( rvent[currUpperAngle + currUpperAngle]-16 + xUpperOffset,  rvent[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset );
     }
 
@@ -795,10 +803,23 @@ int main(bool hard)
 
 
     // rotation 
-    ++ticks;
-    if( ticks > 255 ) ticks = 0;
+    ++upperTicks;
 
-    if( ticks % 6 == 0 ) {
+    if( upperTicks == 4 || upperTicks == 2 ) {
+        yUpperOffset += yUpperOffsetDir;
+        if( yUpperOffset > 0) {
+          yUpperOffsetDir = -1;
+        }else if( yUpperOffset < -15 ) {
+          yUpperOffsetDir = 1;
+        }
+        if( currUpperAngle < 4) {
+          xUpperOffset+=2;
+        } else if ( currUpperAngle > 6) {
+          xUpperOffset-=2;
+        }
+    }
+    if( upperTicks == 6 ) {
+      upperTicks = 0; 
       currUpperAngle += upperStepDir;
       if( currUpperAngle >= lower_SCROLL_COUNT ) {
         upperStepDir = -1;
@@ -809,21 +830,8 @@ int main(bool hard)
       }
     }
 
-    if( ticks % 3 == 0 ) {
-      yUpperOffset += yUpperOffsetDir;
-      if( yUpperOffset > 0) {
-        yUpperOffsetDir = -1;
-      }else if( yUpperOffset < -15 ) {
-        yUpperOffsetDir = 1;
-      }
-      if( currUpperAngle < 4) {
-        xUpperOffset+=2;
-      } else if ( currUpperAngle > 6) {
-        xUpperOffset-=2;
-      }
-    }
-
-    if( ticks % 9  == 0 ) {
+    ++lowerTicks;
+    if( lowerTicks == 8 ) {
       currLowerAngle += lowerStepDir;
       if( currLowerAngle >= upper_SCROLL_COUNT ) {
         lowerStepDir = -1;
@@ -834,7 +842,8 @@ int main(bool hard)
       }
     }
 
-    if( ticks % 15 == 0 ) {
+    if( lowerTicks == 12 ) {
+      lowerTicks = 0;
       yLowerOffset += yLowerOffsetDir;
       if( yLowerOffset > -12) {
         yLowerOffsetDir = -1;
@@ -855,8 +864,9 @@ int main(bool hard)
       stopUpperRows = upper_START_ROW_A + upper_ROWS_A + startUpperHScroll;
       startUpperHScroll = 0;
     }
+    s16 tempAngle = currUpperAngle * upper_ROWS_A;
     for(s16 i=startUpperHScroll, offset=0; i < stopUpperRows; ++i, ++offset ) {
-      hScrollA[ i ] = upper_hScroll[ currUpperAngle * upper_ROWS_A + offset] + xUpperOffset;
+      hScrollA[ i ] = upper_hScroll[ tempAngle + offset] + xUpperOffset;
     }
 
 
@@ -865,21 +875,21 @@ int main(bool hard)
     if( stopLowerHScroll > 223 ) {
       stopLowerHScroll =223;
     }
+    tempAngle = currLowerAngle * lower_ROWS_A;
     for(s16 i=startLowerHScroll, offset=0; i <= stopLowerHScroll; ++i, ++offset ) {
-      hScrollA[ i ] = lower_hScroll[ currLowerAngle * lower_ROWS_A + offset] + xLowerOffset;
+      hScrollA[ i ] = lower_hScroll[ tempAngle + offset] + xLowerOffset;
     }
 
 
     //
+    tempAngle = currLowerAngle * lower_COLS_A;
+    s16 tempAngle2 = currUpperAngle * upper_COLS_A;
     for (s16 i = 0; i < upper_COLS_A; ++i)
     {
-      vScrollUpperA[i] = upper_vScroll[currUpperAngle * upper_COLS_A + i] + yUpperOffset;
+      vScrollLowerA[i] = lower_vScroll[tempAngle + i] + yLowerOffset;
+      vScrollUpperA[i] = upper_vScroll[tempAngle2 + i] + yUpperOffset;
     }
 
-    for (s16 i = 0; i < lower_COLS_A; ++i)
-    {
-      vScrollLowerA[i] = lower_vScroll[currLowerAngle * lower_COLS_A + i] + yLowerOffset;
-    }
 
 
     // scroll the asteroids in BG_B
@@ -909,10 +919,10 @@ int main(bool hard)
     boss_lgun_hb.x2 = boss_lgun_hb.x1 + 32;
     boss_lgun_hb.y2 = boss_lgun_hb.y1 + 32;
 
-//    boss_mgun_hb.x1 = mgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
-//    boss_mgun_hb.y1 = mgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
-//    boss_mgun_hb.x2 = boss_mgun_hb.x1 + 32;
-//    boss_mgun_hb.y2 = boss_mgun_hb.y1 + 32;
+    //    boss_mgun_hb.x1 = mgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
+    //    boss_mgun_hb.y1 = mgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
+    //    boss_mgun_hb.x2 = boss_mgun_hb.x1 + 32;
+    //    boss_mgun_hb.y2 = boss_mgun_hb.y1 + 32;
 
     boss_rgun_hb.x1 = rgun[currUpperAngle + currUpperAngle]-16 + xUpperOffset;
     boss_rgun_hb.y1 = rgun[currUpperAngle + currUpperAngle + 1]-16 - yUpperOffset;
@@ -930,8 +940,8 @@ int main(bool hard)
     boss_rvent_hb.y2 = boss_rvent_hb.y1 + 32;
 
     update();
-    //checkCollisions();
-    
+    checkCollisions();
+
     // queu it up.
     SYS_disableInts();
     {
@@ -939,13 +949,13 @@ int main(bool hard)
       VDP_setHorizontalScrollLine(BG_A, 0, hScrollA, 224, DMA_QUEUE);
       //if( ticks % 2 == 0 ) {
       VDP_setVerticalScrollTile(BG_B, 0, vScrollB, 20, DMA_QUEUE); // use array to set plane offsets
-      //} else {
-      //}
+                                                                   //} else {
+                                                                   //}
 
-    VDP_setSpritePosition(0, // sprite ID ( 0 to 79 )
-        player.pos_x,   // X in screen coords
-        player.pos_y   // Y in screen coords
-        );
+      VDP_setSpritePosition(0, // sprite ID ( 0 to 79 )
+          player.pos_x,   // X in screen coords
+          player.pos_y   // Y in screen coords
+          );
       VDP_updateSprites(totalSprites, DMA_QUEUE);
     }
     SYS_enableInts();
