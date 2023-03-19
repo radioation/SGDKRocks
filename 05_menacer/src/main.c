@@ -45,6 +45,7 @@ const u16 palette_flash[32] =
 
 static u8 flashScreen = 0;
 static bool useFlash = FALSE;
+static bool useDark = FALSE;
 
 
 u16 crosshairsMode = 0;  // 0 raw values, 1 with lookup,  2 with lookup and calibration offset
@@ -121,10 +122,19 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
       }
     }
   } else {
-    // joypad 1 use Z
+    // joypad 1 
     // Z - Toggle screen flash
-    if( changed == BUTTON_Z && joypadState == BUTTON_Z ) {
+    if( changed == BUTTON_A && joypadState == BUTTON_A ) {
       useFlash = !useFlash;
+    } else if( changed == BUTTON_B && joypadState == BUTTON_B ) {
+      useDark = !useDark;
+			if( useDark ) {
+        PAL_setColor(15, 0x0888);
+			 	PAL_setColor(0, 0x0000);
+			} else {
+        PAL_setColor(15, 0x0000);
+			 	PAL_setColor(0, 0x0844);
+			}
     }
 
   }
@@ -226,6 +236,8 @@ int main(bool hard)
   }
   VDP_drawText("Press C to change drawing mode", 5, 5);
 
+  VDP_drawText("Use Joypad A to toggle flash mode", 4, 17);
+  VDP_drawText("Use Joypad B to toggle dark mode", 4, 19);
   ///////////////////////////////////////////////////////////////////////////////////
   // Main Loop!
   while (TRUE)
