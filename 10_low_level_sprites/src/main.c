@@ -1,5 +1,6 @@
 #include <genesis.h>
 #include "resources.h"
+#include "dino.h"
 
 const u32 square_tile[8] =
 {
@@ -22,7 +23,7 @@ int main(bool hard)
   // load the palettes
   PAL_setPalette( PAL0, ship_pal.data, CPU );
   PAL_setPalette( PAL1, rock_pal.data, CPU );
-  PAL_setPalette( PAL2, numbers_pal.data, CPU );
+  PAL_setPalette( PAL2, dino_pal.data, CPU );
   PAL_setPalette( PAL3, shipsheet_pal.data, CPU );
 
 
@@ -60,6 +61,13 @@ int main(bool hard)
   VDP_loadTileData( shipsheet_tileset.tiles, // tile data pointer
       shipsheet_ind,    // index
       80,        // number of tiles to load 
+      DMA_QUEUE         // transfer method
+      );
+
+  int dino_ind = shipsheet_ind + 80; 
+  VDP_loadTileData( dino_frame_0, // tile data pointer
+      dino_ind,    // index
+      dino_frame_0_tiles,        // number of tiles to load 
       DMA_QUEUE         // transfer method
       );
 
@@ -124,7 +132,7 @@ int main(bool hard)
       120,   // X in screen coords
       40,   // Y in screen coords
       SPRITE_SIZE(2,2), // 1x1 to up to 4x4
-      TILE_ATTR_FULL(PAL2,    // PALette 
+      TILE_ATTR_FULL(PAL3,    // PALette 
         1,  // priority
         0,  // Flip Vertical
         0,  // Flip Horizontal
@@ -148,11 +156,62 @@ int main(bool hard)
         0,  // Flip Horizontal
         shipsheet_ind + shipframe_offset  // index
         ) ,
-      0
+      6
       );
   // tell VDP to draw  the 6 sprites we've defined.
-  VDP_updateSprites(6, DMA_QUEUE_COPY);
+  s16 currSprite = 6 ;
+  //for( int i=0; i < 
 
+  /*
+  VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+      160 + dino_frame_0_sprite_info[0].startX,   // X in screen coords
+      20 + dino_frame_0_sprite_info[0].startY,   // Y in screen coords
+      SPRITE_SIZE(dino_frame_0_sprite_info[0].width,4), // 1x1 to up to 4x4
+      TILE_ATTR_FULL(PAL2,    // PALette 
+        1,  // priority
+        0,  // Flip Vertical
+        0,  // Flip Horizontal
+        dino_ind // index
+        ) ,
+      currSprite +1 
+      );
+  VDP_setSpriteFull(7, // sprite ID ( 0 to 79 )
+      160 + dino_frame_0_sprite_info[1].startX,   // X in screen coords
+      20 + dino_frame_0_sprite_info[1].startY,   // Y in screen coords
+      SPRITE_SIZE(dino_frame_0_sprite_info[1].width,4), // 1x1 to up to 4x4
+      TILE_ATTR_FULL(PAL2,    // PALette 
+        1,  // priority
+        0,  // Flip Vertical
+        0,  // Flip Horizontal
+        dino_ind + 8 // index
+        ) ,
+      0
+      );
+
+*/
+  s16 dinoSprite = 6; 
+  s16 offset = 0;
+  for( s16 i=0; i < dino_frame_0_sprite_count; ++ i ){
+    if( i > 0 ) {
+      offset += dino_frame_0_sprite_info[i-1].tiles;
+    }
+    VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+        160 + dino_frame_0_sprite_info[i].startX,   // X in screen coords
+        20 + dino_frame_0_sprite_info[i].startY,   // Y in screen coords
+        SPRITE_SIZE(dino_frame_0_sprite_info[i].width,4), // 1x1 to up to 4x4
+        TILE_ATTR_FULL(PAL2,    // PALette 
+          1,  // priority
+          0,  // Flip Vertical
+          0,  // Flip Horizontal
+          dino_ind + offset // index
+          ) ,
+        currSprite +1 
+        );
+    ++currSprite;
+  }
+
+  VDP_updateSprites(currSprite, DMA_QUEUE_COPY);
+  s16 dinoFrame = 0;
   while(TRUE)
   {
     // move sprite position
@@ -186,8 +245,195 @@ int main(bool hard)
         shipsheet_ind + shipframe_offset  // tile index
         );
 
-      // tell VDP to draw  the 6 sprites we've defined.
-      VDP_updateSprites(6, DMA_QUEUE_COPY);
+    s16 currSprite = 6 ;
+    s16 totalSprites = 6;
+    s16 dinoSprite = 6; 
+    s16 offset = 0;
+    if ( x % 10 == 0) {
+    ++dinoFrame;
+    if(dinoFrame> 6) {
+      dinoFrame = 0;
+    }
+    //dinoFrame = 2;
+    switch(dinoFrame) {
+      case 0:
+        VDP_loadTileData( dino_frame_0, // tile data pointer
+            dino_ind,    // index
+            dino_frame_0_tiles,        // number of tiles to load 
+            DMA_QUEUE         // transfer method
+            );
+        for( s16 i=0; i < dino_frame_0_sprite_count; ++ i ){
+          if( i > 0 ) {
+            offset += dino_frame_0_sprite_info[i-1].tiles;
+          }
+          VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+              160 + dino_frame_0_sprite_info[i].startX,   // X in screen coords
+              20 + dino_frame_0_sprite_info[i].startY,   // Y in screen coords
+              SPRITE_SIZE(dino_frame_0_sprite_info[i].width,4), // 1x1 to up to 4x4
+              TILE_ATTR_FULL(PAL2,    // PALette 
+                1,  // priority
+                0,  // Flip Vertical
+                0,  // Flip Horizontal
+                dino_ind + offset // index
+                ) ,
+               ( i < dino_frame_0_sprite_count -1 ) ? currSprite  +1 : 0
+              );
+          ++currSprite;
+        }
+        break;
+      case 1:
+        VDP_loadTileData( dino_frame_1, // tile data pointer
+            dino_ind,    // index
+            dino_frame_1_tiles,        // number of tiles to load 
+            DMA_QUEUE         // transfer method
+            );
+        for( s16 i=0; i < dino_frame_1_sprite_count; ++ i ){
+          if( i > 0 ) {
+            offset += dino_frame_1_sprite_info[i-1].tiles;
+          }
+          VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+              160 + dino_frame_1_sprite_info[i].startX,   // X in screen coords
+              20 + dino_frame_1_sprite_info[i].startY,   // Y in screen coords
+              SPRITE_SIZE(dino_frame_1_sprite_info[i].width,4), // 1x1 to up to 4x4
+              TILE_ATTR_FULL(PAL2,    // PALette 
+                1,  // priority
+                0,  // Flip Vertical
+                0,  // Flip Horizontal
+                dino_ind + offset // index
+                ) ,
+               ( i < dino_frame_0_sprite_count -1 ) ? currSprite  +1 : 0
+              );
+          ++currSprite;
+        }
+        break;
+      case 2:
+        VDP_loadTileData( dino_frame_2, // tile data pointer
+            dino_ind,    // index
+            dino_frame_2_tiles,        // number of tiles to load 
+            DMA_QUEUE         // transfer method
+            );
+        for( s16 i=0; i < dino_frame_2_sprite_count; ++ i ){
+          if( i > 0 ) {
+            offset += dino_frame_2_sprite_info[i-1].tiles;
+          }
+          VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+              160 + dino_frame_2_sprite_info[i].startX,   // X in screen coords
+              20 + dino_frame_2_sprite_info[i].startY,   // Y in screen coords
+              SPRITE_SIZE(dino_frame_2_sprite_info[i].width,4), // 1x1 to up to 4x4
+              TILE_ATTR_FULL(PAL2,    // PALette 
+                1,  // priority
+                0,  // Flip Vertical
+                0,  // Flip Horizontal
+                dino_ind + offset // index
+                ) ,
+               ( i < dino_frame_0_sprite_count -1 ) ? currSprite  +1 : 0
+              );
+          ++currSprite;
+        }
+        break;
+      case 3:
+        VDP_loadTileData( dino_frame_3, // tile data pointer
+            dino_ind,    // index
+            dino_frame_3_tiles,        // number of tiles to load 
+            DMA_QUEUE         // transfer method
+            );
+        for( s16 i=0; i < dino_frame_3_sprite_count; ++ i ){
+          if( i > 0 ) {
+            offset += dino_frame_3_sprite_info[i-1].tiles;
+          }
+          VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+              160 + dino_frame_3_sprite_info[i].startX,   // X in screen coords
+              20 + dino_frame_3_sprite_info[i].startY,   // Y in screen coords
+              SPRITE_SIZE(dino_frame_3_sprite_info[i].width,4), // 1x1 to up to 4x4
+              TILE_ATTR_FULL(PAL2,    // PALette 
+                1,  // priority
+                0,  // Flip Vertical
+                0,  // Flip Horizontal
+                dino_ind + offset // index
+                ) ,
+               ( i < dino_frame_0_sprite_count -1 ) ? currSprite  +1 : 0
+              );
+          ++currSprite;
+        }
+        break;
+      case 4:
+        VDP_loadTileData( dino_frame_4, // tile data pointer
+            dino_ind,    // index
+            dino_frame_4_tiles,        // number of tiles to load 
+            DMA_QUEUE         // transfer method
+            );
+        for( s16 i=0; i < dino_frame_4_sprite_count; ++ i ){
+          if( i > 0 ) {
+            offset += dino_frame_4_sprite_info[i-1].tiles;
+          }
+          VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+              160 + dino_frame_4_sprite_info[i].startX,   // X in screen coords
+              20 + dino_frame_4_sprite_info[i].startY,   // Y in screen coords
+              SPRITE_SIZE(dino_frame_4_sprite_info[i].width,4), // 1x1 to up to 4x4
+              TILE_ATTR_FULL(PAL2,    // PALette 
+                1,  // priority
+                0,  // Flip Vertical
+                0,  // Flip Horizontal
+                dino_ind + offset // index
+                ) ,
+               ( i < dino_frame_0_sprite_count -1 ) ? currSprite  +1 : 0
+              );
+          ++currSprite;
+        }
+        break;
+      case 5:
+        VDP_loadTileData( dino_frame_5, // tile data pointer
+            dino_ind,    // index
+            dino_frame_5_tiles,        // number of tiles to load 
+            DMA_QUEUE         // transfer method
+            );
+        for( s16 i=0; i < dino_frame_5_sprite_count; ++ i ){
+          if( i > 0 ) {
+            offset += dino_frame_5_sprite_info[i-1].tiles;
+          }
+          VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+              160 + dino_frame_5_sprite_info[i].startX,   // X in screen coords
+              20 + dino_frame_5_sprite_info[i].startY,   // Y in screen coords
+              SPRITE_SIZE(dino_frame_5_sprite_info[i].width,4), // 1x1 to up to 4x4
+              TILE_ATTR_FULL(PAL2,    // PALette 
+                1,  // priority
+                0,  // Flip Vertical
+                0,  // Flip Horizontal
+                dino_ind + offset // index
+                ) ,
+               ( i < dino_frame_0_sprite_count -1 ) ? currSprite  +1 : 0
+              );
+          ++currSprite;
+        }
+        break;
+      default:
+        VDP_loadTileData( dino_frame_6, // tile data pointer
+            dino_ind,    // index
+            dino_frame_6_tiles,        // number of tiles to load 
+            DMA_QUEUE         // transfer method
+            );
+        for( s16 i=0; i < dino_frame_6_sprite_count; ++ i ){
+          if( i > 0 ) {
+            offset += dino_frame_6_sprite_info[i-1].tiles;
+          }
+          VDP_setSpriteFull(currSprite, // sprite ID ( 0 to 79 )
+              160 + dino_frame_6_sprite_info[i].startX,   // X in screen coords
+              20 + dino_frame_6_sprite_info[i].startY,   // Y in screen coords
+              SPRITE_SIZE(dino_frame_6_sprite_info[i].width,4), // 1x1 to up to 4x4
+              TILE_ATTR_FULL(PAL2,    // PALette 
+                1,  // priority
+                0,  // Flip Vertical
+                0,  // Flip Horizontal
+                dino_ind + offset // index
+                ) ,
+               ( i < dino_frame_0_sprite_count -1 ) ? currSprite  +1 : 0
+              );
+          ++currSprite;
+        }
+    }
+    }
+    // tell VDP to draw  the 6 sprites we've defined.
+    VDP_updateSprites(currSprite, DMA_QUEUE_COPY);
 
     // do VBLankd processes
     SYS_doVBlankProcess();
