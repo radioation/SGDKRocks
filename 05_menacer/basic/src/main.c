@@ -11,6 +11,7 @@ int main(bool hard)
   u8 portType = JOY_getPortType(PORT_2);
   if (portType == PORT_TYPE_MENACER)
   {
+    // 2. Turn on Menacer support
     JOY_setSupport(PORT_2, JOY_SUPPORT_MENACER);
     menacerFound = TRUE;
     VDP_drawText("Menacer FOUND!", 13, 1);
@@ -25,10 +26,16 @@ int main(bool hard)
   // Main Loop!
   while (TRUE)
   {
-
     if (menacerFound)
     {
-      // get the button states
+      // 3. Read X and Y values
+      s16 xVal = JOY_readJoypadX(JOY_2);
+      s16 yVal = JOY_readJoypadY(JOY_2);
+      char message[40];
+      sprintf(message, "Menacer Values x:%d, y:%d      ", xVal, yVal);
+      VDP_drawText(message, 8, 7);
+
+      // 4. Read the button states
       u16 value = JOY_readJoypad(JOY_2);
       if (value & BUTTON_A)
       {
@@ -65,17 +72,7 @@ int main(bool hard)
         VDP_drawText(" ", 24, 9);
       }
 
-
-      // The menacer appears to return 8-bit values (0 to 255)
-      // if both values are -1, the gun is aiming off screen.
-      s16 xVal = JOY_readJoypadX(JOY_2);
-      s16 yVal = JOY_readJoypadY(JOY_2);
-      char message[40];
-      sprintf(message, "Menacer Values x:%d, y:%d      ", xVal, yVal);
-      VDP_drawText(message, 8, 7);
-
-
-      SYS_doVBlankProcess();
     }
+    SYS_doVBlankProcess();
   }
 }
