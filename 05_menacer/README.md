@@ -1,55 +1,50 @@
 # Sega Menacer Light Gun
-So, I don't actually have a Sega Menacer, they're a bit more expensive 
-than I'm willing to pay on ebay. OTOH, I found [this](https://www.youtube.com/watch?v=a9mCa0__SPQ)
-video  on YouTube.   I was able to get a relatively cheap Radica Menacer
-and modify it to work with my Sega Genesis and SGDK.
-
-
-Things to keep in mind when using SGDK with the Menacer.
-* I'm unable to link using SGDK 1.60.  It does work with 1.51
-~~~cmd
-out/sega.o: In function `_EXTINT':
-(.text.keepboot+0x44e): undefined reference to `internalExtIntCB'
-out/sega.o: In function `_HINT':
-(.text.keepboot+0x460): undefined reference to `internalHIntCB'
-out/sega.o: In function `_VINT':
-(.text.keepboot+0x472): undefined reference to `internalVIntCB'
-~~~
-* Brightness Matters. In my first attempt, my calls to `JOY_readJoypadX()` and `JOY_readJoypadY()` always returned -1 values.   Changing the background color fixed this.
-* The X and Y values returned by `JOY_readJoypadX()` and `JOY_readJoypadY()` are 8 bits.  This is smaller than the 320 pixels the Sega Genesis can display.
+This code has been updated to work with SGDK 1.80.  It may not work with older versions of SGDK. 
+I have had linking problems with 1.60 in the past.  You should use the most recent version 
+of SGDK.
+  ~~~cmd
+  out/sega.o: In function `_EXTINT':
+  (.text.keepboot+0x44e): undefined reference to `internalExtIntCB'
+  out/sega.o: In function `_HINT':
+  (.text.keepboot+0x460): undefined reference to `internalHIntCB'
+  out/sega.o: In function `_VINT':
+  (.text.keepboot+0x472): undefined reference to `internalVIntCB'
+  ~~~
+* Color and brightness matters. In my first version of this code, calls to `JOY_readJoypadX()` and `JOY_readJoypadY()` always returned -1 values.   Changing the background color fixed this.
+* The X and Y values returned by `JOY_readJoypadX()` and `JOY_readJoypadY()` range from -1 to 255.  This range is smaller than the 320 pixels the Sega Genesis can display.
 * The X values from `JOY_readJoypadX()` are discontinuous.  From left-to-right I'm seeing approximately values of 84-182:229-255:0-13 with my modified Radica Menacer.
 * The are some comments about calibration [here](http://gendev.spritesmind.net/forum/viewtopic.php?t=14&start=660)
-> So you have two things that any light gun game MUST do: first, convert the 
-> counter values into a pixel; and second, have some kind of calibration screen.
->  To calibrate the gun, you put up a target on the screen with a message 
->  telling the user to fire at the center of the target. A simple bulls-eye is 
->  fine. You then look at where the gun SAYS the user is aiming, and adjust it 
->  to be the center. It's best to have the user fire several times so as to take 
->  into account the user's ability to hold the gun steady. Maybe show the user 
->  where the gun thinks it's aimed based on the current average offset. The user 
->  can just keep firing until the spot matches the center of the target.
+   > So you have two things that any light gun game MUST do: first, convert the 
+   > counter values into a pixel; and second, have some kind of calibration screen.
+   >  To calibrate the gun, you put up a target on the screen with a message 
+   >  telling the user to fire at the center of the target. A simple bulls-eye is 
+   >  fine. You then look at where the gun SAYS the user is aiming, and adjust it 
+   >  to be the center. It's best to have the user fire several times so as to take 
+   >  into account the user's ability to hold the gun steady. Maybe show the user 
+   >  where the gun thinks it's aimed based on the current average offset. The user 
+   >  can just keep firing until the spot matches the center of the target.
 
 ## Basic Code 
 1. Determine if a Menacer is attached to the controller port
-~~~c
-if(portType == PORT_TYPE_MENACER )
-{
-	// ... do stuff here
-}		
-~~~
+   ~~~c
+   if(portType == PORT_TYPE_MENACER )
+   {
+   	// ... do stuff here
+   }		
+   ~~~
 2. Setup Menacer support
-~~~c
-if(portType == PORT_TYPE_MENACER )
-{
-	JOY_setSupport(PORT_2, JOY_SUPPORT_MENACER);
-}
-~~~
+   ~~~c
+   if(portType == PORT_TYPE_MENACER )
+   {
+   	JOY_setSupport(PORT_2, JOY_SUPPORT_MENACER);
+   }
+   ~~~
 3. Read X and Y values for the mouse with `JOY_readJoypadX()` and `JOY_readJoypadY()`
 These functions are 8-bit and return values ranging from 0 to 255.  The Y value is 
 continuous.  The X value is discontinuous.   Neither X nor Y map exactly to the 
 screen coordinates so you'll have to adjust them at runtime
 
-### Full Code
+### Basic Code
 ~~~c
 	// check Port 2 for the Sega Menacer
 	bool menacerFound = FALSE;
@@ -80,7 +75,6 @@ screen coordinates so you'll have to adjust them at runtime
 		// SYS_doVBlankProcess(); 1.60 not linking
 
 	}
-}
 ~~~
 
 ## Mapping JOY_readJoypadX Values to Pixel Coordinates
@@ -103,30 +97,28 @@ It points out that :
 
 So I made lookup table that can hold the full range of possible 
 values reported by `JOY_readJoypadX()` including the gap.
-I populate the table with screen coordinates starting at -40 (just a guess)
+I populate the table with screen coordinates starting at 0 (just a guess)
 and incrementing by 2.
 ~~~c
-
-static fix32 xLookup[ 256 ];  // full rangeA for JOY_readJoypadX()
-
+static s16 xLookup[ 256 ];  // full rangeA for JOY_readJoypadX()
 
 static void calculateXLookup() {
   // My own experience has 84 at left edge of the monitor, and 13 on the right.
   // I'll start populating the table left to right with a screen value of -40
-  fix32 pos = FIX32(-40);
+  s16 pos = 0;
   for( int i=60; i < 183; ++i ) {
     xLookup[i] =  pos;
-    pos = fix32Add( pos, FIX32(2) );
+    pos += 2;
   }
 	// handle the gap in X values 
   for( int i=229; i < 256; ++i ) {
     xLookup[i] =  pos;
-    pos = fix32Add( pos, FIX32(2) );
+    pos += 2;
   }
 	// handle the wrap around to 0  
   for( int i=0; i < 60; ++i ) {
     xLookup[i] =  pos;
-    pos = fix32Add( pos, FIX32(2) );
+    pos += 2;
   }
 
 }
@@ -135,15 +127,15 @@ Once the lookup table is ready, decent X and Y pixel values  can be found
 pretty easily
 ~~~c
   crosshairsPosX = xLookup[ xVal ];  // lookup the screen coordinate based on Horizontal Value
-  crosshairsPosY = FIX32( yVal  );   // direct conversion of Vertical value
+  crosshairsPosY = yVal;   // direct conversion of Vertical value
 ~~~
 
 Depending on what you're displaying, you may want to factor in an offset.
 In my case I want to center a 16 x 16 sprite.  So I want to shift it to the 
 left and up by 8 pixels. I do this by subtracting 8 from the X and Y values.
 ~~~c
-  crosshairsPosX = fix32Sub(xLookup[ xVal ], FIX32(8));
-  crosshairsPosY = fix32Sub(FIX32( yVal  ),  FIX32(8));
+  crosshairsPosX = xLookup[ xVal ] - 8;
+  crosshairsPosY = yVal - 8;
 ~~~
 
 ### Calibration
@@ -158,11 +150,11 @@ values for each shot
 4. Calculate an offset from the screen center and the average X/Y values
 
 
-To get the avere I defined an array to store the X and Y positiions
+To get the average I defined an array to store the X and Y positiions
 ~~~c
 #define MAX_VALS 10
-static fix32 xValues[MAX_VALS];
-static fix32 yValues[MAX_VALS];
+static s16 xValues[MAX_VALS];
+static s16 yValues[MAX_VALS];
 static u16 currentValue = 0;
 ~~~
 The Joypad handler stores values when the trigger (BUTTON_A) is pulled
@@ -175,7 +167,7 @@ The Joypad handler stores values when the trigger (BUTTON_A) is pulled
         // store values for calculation
         if( currentValue < MAX_VALS ) {
           xValues[currentValue] = xLookup[xVal];
-          yValues[currentValue] = FIX32(yVal);
+          yValues[currentValue] = s16(yVal);
           ++currentValue;
         }
         if( currentValue == MAX_VALS ){
@@ -189,27 +181,27 @@ The Joypad handler stores values when the trigger (BUTTON_A) is pulled
 And calculates the offsets using the average
 ~~~c
 static void calculateOffset() {
-  fix32 xTemp = FIX32(0);
-  fix32 yTemp = FIX32(0);
+  s16 xTemp = 0;
+  s16 yTemp = 0;
   // get average X and Y
   for( int i=0; i < currentValue; ++i ) {
-    xTemp = fix32Add( xTemp, xValues[i] );
-    yTemp = fix32Add( yTemp, yValues[i] );
+    xTemp = xTemp + xValues[i];
+    yTemp = yTemp + yValues[i];
   }
-  xTemp = fix32Div( xTemp, FIX32( currentValue ) );
-  yTemp = fix32Div( yTemp, FIX32( currentValue ) );
+  xTemp = xTemp / currentValue;
+  yTemp = yTemp / currentValue;
 
   // center should be 160, 112
-  xOffset = FIX32(160) - xTemp;
-  yOffset = FIX32(112) - yTemp;
+  xOffset = 160 - xTemp;
+  yOffset = 112 - yTemp;
 
 }
 ~~~
 
 The crosshair positions are now calculated with the lookup table *and* offset values
 ~~~c
-crosshairsPosX = fix32Sub(fix32Add(xLookup[xVal], xOffset), FIX32(8));
-crosshairsPosY = fix32Sub(fix32Add(FIX32( yVal ), yOffset), FIX32(8));
+crosshairsPosX = xLookup[xVal] + xOffset - 8;
+crosshairsPosY = s16( yVal ) + yOffset - 8;
 ~~~
 
 
