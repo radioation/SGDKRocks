@@ -39,7 +39,7 @@ of SGDK.
    	JOY_setSupport(PORT_2, JOY_SUPPORT_MENACER);
    }
    ~~~
-3. Read X and Y values for the mouse with `JOY_readJoypadX()` and `JOY_readJoypadY()`
+3. Read X and Y values for the menacer with `JOY_readJoypadX()` and `JOY_readJoypadY()`
 These functions are 8-bit and return values ranging from 0 to 255.  The Y value is 
 continuous.  The X value is discontinuous.   Neither X nor Y map exactly to the 
 screen coordinates so you'll have to adjust them at runtime
