@@ -84,19 +84,19 @@ static void joypadHandler(u16 joypadId, u16 changed, u16 joypadState)
 	// standard controller handles modes
 	if (joypadId == JOY_1)
 	{
-		if (changed == BUTTON_B && joypadState == BUTTON_B)
+		if (joypadState & BUTTON_B)
 		{
 			currentValue = 0;
 			calibrateMode = TRUE;
 		}
-		else if (changed == BUTTON_C && joypadState == BUTTON_C)
+		else if (joypadState & BUTTON_C)
 		{
 			++crosshairsMode;
 			if (crosshairsMode > 2)
 			{
 				crosshairsMode = 0;
 			}
-		} else if( changed == BUTTON_Z && joypadState == BUTTON_Z ) {
+		} else if( joypadState & BUTTON_Z ) {
 		  // Z - Toggle screen flash
 			useFlash = !useFlash;
 		}		
@@ -105,7 +105,7 @@ static void joypadHandler(u16 joypadId, u16 changed, u16 joypadState)
 	{
 
 		// A
-		if (changed == BUTTON_A && joypadState == BUTTON_A)
+		if (joypadState & BUTTON_A)
 		{
 			flashScreen = 3;
 			if (calibrateMode)
