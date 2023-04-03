@@ -130,9 +130,9 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 state ) {
       useDark = !useDark;
       if( useDark ) {
         palette[15] = 0x0888;
-        palette[0] = 0;
+        palette[0] = 0x0004;
         PAL_setColor(15, 0x0888);
-        PAL_setColor(0, 0x0000);
+        PAL_setColor(0, 0x0004);
       } else {
         palette[15] = 0x0000;
         palette[0] = 0x844;
