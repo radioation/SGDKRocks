@@ -77,17 +77,17 @@ static void calculateOffset() {
   yTemp = yTemp / currentValue;
 
   // center should be 160, 112 
-  xOffset = 160 - xTemp;		
-  yOffset = 112 - yTemp;		
+  xOffset = 160 - xTemp;
+  yOffset = 112 - yTemp;
 
 }
 
 
-static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
+static void joypadHandler( u16 joypadId, u16 changed, u16 state ) {
   if( joypadId == JOY_2  ) {
 
     // A
-    if( changed == BUTTON_A && joypadState == BUTTON_A) {
+    if( state & BUTTON_A ) {
       flashScreen = 3;
       if( calibrateMode ) {
         // get reading
@@ -107,34 +107,38 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
       }
     }
 
-
     // B
-    if( changed == BUTTON_B && joypadState == BUTTON_B ) {
+    if( state & BUTTON_B  ){
       currentValue = 0;
       calibrateMode = TRUE;
     }
 
     // C change render mode
-    if( changed == BUTTON_C && joypadState == BUTTON_C ) {
+    if( state & BUTTON_C ) {
       ++crosshairsMode;
       if( crosshairsMode > 2 ) {
         crosshairsMode = 0;
       }
     }
-  } else {
+  } else if( joypadId == JOY_1  ) {
     // joypad 1 
     // Z - Toggle screen flash
-    if( changed == BUTTON_A && joypadState == BUTTON_A ) {
+    if( state & BUTTON_A ) {
       useFlash = !useFlash;
-    } else if( changed == BUTTON_B && joypadState == BUTTON_B ) {
+    }
+    if( state & BUTTON_B ) {
       useDark = !useDark;
-			if( useDark ) {
+      if( useDark ) {
+        palette[15] = 0x0888;
+        palette[0] = 0;
         PAL_setColor(15, 0x0888);
-			 	PAL_setColor(0, 0x0000);
-			} else {
+        PAL_setColor(0, 0x0000);
+      } else {
+        palette[15] = 0x0000;
+        palette[0] = 0x844;
         PAL_setColor(15, 0x0000);
-			 	PAL_setColor(0, 0x0844);
-			}
+        PAL_setColor(0, 0x0844);
+      }
     }
 
   }
