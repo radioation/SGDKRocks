@@ -3,9 +3,10 @@
 int main(bool hard)
 {
 
+
+  PAL_setColor(0, 0x0844);
   ///////////////////////////////////////////////////////////////////////////////////
   // Menacer Setup
-
   //  1. check Port 2 for the Sega Menacer
   bool menacerFound = FALSE;
   u8 portType = JOY_getPortType(PORT_2);
