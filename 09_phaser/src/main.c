@@ -160,6 +160,14 @@ int main(bool hard)
   PAL_getColors( 0, &palette[0], 16);
   memcpy(&palette[16], target_pal.data, 16 * 2);
 
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  // BG setup
+  s16 indexB = TILE_USER_INDEX;
+  VDP_loadTileSet(bgrect.tileset, indexB, CPU);
+  VDP_drawImageEx(BG_B, &bgrect, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, indexB), 0, 0, FALSE, TRUE);
+
+
   ///////////////////////////////////////////////////////////////////////////////////
   // Phaser Setup
   //

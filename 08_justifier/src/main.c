@@ -97,8 +97,13 @@ static void joypadHandler( u16 joypadId, u16 changed, u16 joypadState ) {
 
 
 static void calculateXLookup() {
-  // My blue justifier appears to return 34 through 176 when I pan 
-  // across my TV screen in H32 mode.  So about 142 values.
+  // My blue justifiers return approximately 
+  //  * 31 through 180 ( 149 values ) when I pan from left to right
+  //  * 33 through 176 ( 143 values ) when I pan from left to right
+  // this doesn't really map to 2 pixels for each.
+  //  Kega fusion
+  //  35 through 182, 228 to 235 from left to right
+  //      ( 182-35) + (235- 228)  = 154 
   fix32 pos = FIX32(0);
   for( int i=34; i < 176; ++i ) {
     xLookup[i] =  fix32ToInt(pos);
@@ -152,6 +157,14 @@ int main(bool hard)
   PAL_setColor(0, RGB24_TO_VDPCOLOR(0x4488ff)); // seems to work OK
   PAL_getColors( 0, &palette[0], 16);
   memcpy(&palette[16], tgt_palette.data, 16 * 2);
+
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  // BG setup
+  s16 indexB = TILE_USER_INDEX;
+  VDP_loadTileSet(bgrect.tileset, indexB, CPU);
+  VDP_drawImageEx(BG_B, &bgrect, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, indexB), 0, 0, FALSE, TRUE);
+
 
   ///////////////////////////////////////////////////////////////////////////////////
   // Justifier Setup

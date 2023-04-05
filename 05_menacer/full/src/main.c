@@ -5,41 +5,13 @@
 static u16 palette[32];
 const u16 palette_flash[32] =
 {
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
+  0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE,
 
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
+  0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE,
 
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
+  0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE,
 
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE,
-  0x0EEE
+  0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE, 0x0EEE
 };
 
 
@@ -149,10 +121,24 @@ static void calculateXLookup() {
   // $43-$6F   : 67-111  : 45 hvals
   //  there's only 210 havls total with many offscreen
   //  The active area is 290 < 320 pixels.
+  //
   // since I'm going to bother with a calibration step  and offset I will use arbitray values
   //  in the lookup
   //
-  //  My own experience has puts 84  the left edge of the monitor, so I'll start with 60
+  //  My own experience has been
+  //    Sega Menacer:  At the left start at 65 and runs to 182. Then skpps to 229  and contiues to 255
+  //                   then finally 0 to 3 on the right side 
+  //                    ( 182-65 ) + (255-229) + (3 - 0)  = 146
+  //
+  //    Radica Menacer:  At the left start at 79 and runs to 182. Then skpps to 229  and contiues to 255
+  //                   then finally 0 to 28 on the right side 
+  //                    ( 182-79 ) + (255-229) + (28 - 0) = 157  
+  //
+  //    Kega Fusion:  At the left start at 77 and runs to 182. Then skpps to 228  and contiues to 255
+  //                   then finally 0 to 22 on the right side 
+  //                    ( 182-77 ) + (255-228) + (22 - 0) =  154
+  //
+  //  
   s16 pos = 0;	
   for( int i=60; i < 183; ++i ) {
     xLookup[i] =  pos;
@@ -171,6 +157,7 @@ static void calculateXLookup() {
 
 int main(bool hard)
 {
+  
 
   ///////////////////////////////////////////////////////////////////////////////////
   // Sprite Setup
@@ -213,6 +200,12 @@ int main(bool hard)
   PAL_setColor(0, 0x0844);
   PAL_getColors( 0, &palette[0], 16);
   memcpy(&palette[16], target_pal.data, 16 * 2);
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  // BG setup
+  s16 indexB = TILE_USER_INDEX;
+  VDP_loadTileSet(bgrect.tileset, indexB, CPU);
+  VDP_drawImageEx(BG_B, &bgrect, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, indexB), 0, 0, FALSE, TRUE);
 
   ///////////////////////////////////////////////////////////////////////////////////
   // Menacer Setup
