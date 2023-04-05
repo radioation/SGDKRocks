@@ -59,8 +59,6 @@ static u16 currentValue = 0;
 static s16 xOffset = 0;
 static s16 yOffset = 0;
 
-//static s16 scaleFactorX = FIX32(1.0);  // according to gen_lightgun.pdf each H counter unit is equivalent to two pixels.
-//static s16 scaleFactorY = FIX32(1.0);  // according to gen_lightgun.pdf each V counter is directly convertable to a Y coordinate
 static s16 xLookup[ 256 ];  // full range for JOY_readJoypadX()
 
 
