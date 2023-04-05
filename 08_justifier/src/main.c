@@ -100,15 +100,20 @@ static void calculateXLookup() {
   // My blue justifiers return approximately 
   //  * 31 through 180 ( 149 values ) when I pan from left to right
   //  * 33 through 176 ( 143 values ) when I pan from left to right
-  // this doesn't really map to 2 pixels for each.
+  // 
   //  Kega fusion
   //  35 through 182, 228 to 235 from left to right
   //      ( 182-35) + (235- 228)  = 154 
-  fix32 pos = FIX32(0);
-  for( int i=34; i < 176; ++i ) {
-    xLookup[i] =  fix32ToInt(pos);
-    pos = fix32Add( pos, FIX32(2.25) );
+  s16 pos = 0;
+  for( int i=20; i < 183; ++i ) {
+    xLookup[i] = pos;
+    pos += 2;
   }
+  for( int i=229; i < 255; ++i ) {
+    xLookup[i] = pos;
+    pos += 2;
+  }
+
 }
 
 

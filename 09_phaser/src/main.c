@@ -105,13 +105,20 @@ static void joypadHandler(u16 joypadId, u16 changed, u16 joypadState)
 
 static void calculateXLookup()
 {
-  // My SMS Phaser appears to return 30 through 180 when I pan
-  // across my TV screen in H32 mode.   so about 150 values over 320 pixels
-  fix32 pos = FIX32(0);
-  for (int i = 30; i < 180; ++i)
+  // My SMS Phasers appears to return
+  //   30 through 182 then 229 through 235 when I pan left to right accross the screen
+  //   37 through 182 then 229 through 237 when I pan left to right accross the screen
+  
+  s16 pos = 0;
+  for (int i = 20; i < 183; ++i)
   {
-    xLookup[i] = fix32ToInt(pos);
-    pos = fix32Add(pos, FIX32(2.13333));
+    xLookup[i] = pos;
+    pos += 2;
+  }
+  for (int i = 229; i < 256; ++i)
+  {
+    xLookup[i] = pos;
+    pos += 2;
   }
 }
 
