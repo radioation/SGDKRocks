@@ -11,7 +11,7 @@ static s16 yOffset = 0;
 s16 crosshairsPosX = 152;
 s16 crosshairsPosY = 104;
 
-#define MAX_SAMPLES 5
+#define MAX_SAMPLES 4
 bool useAverage = FALSE;
 s16 storedXs[MAX_SAMPLES];
 s16 storedYs[MAX_SAMPLES];
@@ -36,29 +36,6 @@ static void calculateXLookup() {
 }
 
 
-// joypad handler
-static void joypadHandler( u16 joypadId, u16 changed, u16 state ) {
-  if( joypadId == JOY_2  ) {
-
-    // A
-    if( state & BUTTON_A ) { 
-      // trigger pulled
-      checkCollision(); 
-    } else if( changed & BUTTON_START)
-    {
-    }
-
-    if( state & BUTTON_B  ){
-      // do nothing unless I think of osmething later.
-      useAverage = !useAverage;
-    }
-
-    if( state & BUTTON_C ) {
-      // reset vsibiliyt of all sprites.
-
-    }
-  }
-}
 
 // create UFO
 
@@ -125,6 +102,31 @@ void checkCollision() {
 
 }
 
+// joypad handler
+static void joypadHandler( u16 joypadId, u16 changed, u16 state ) {
+  if( joypadId == JOY_2  ) {
+
+    // A
+    if( state & BUTTON_A ) { 
+      // trigger pulled
+      checkCollision(); 
+    }
+
+    if( state & BUTTON_B  ){
+      // average out positions
+      useAverage = !useAverage;
+    }
+
+    if( state & BUTTON_C ) {
+      // reset vsibiliyt of all sprites.
+      for( u16 i=0; i < MAX_UFOS; ++i ) {
+        ufos[i].active = TRUE;
+        SPR_setVisibility(ufos[i].sprite, VISIBLE );
+      }
+
+    }
+  }
+}
 
 int main(bool hard)
 {
