@@ -1,6 +1,7 @@
 #include <genesis.h>
 #include "resources.h"
 #include "dino.h"
+#include "explosion.h"
 
 const u32 square_tile[8] =
 {
@@ -58,13 +59,13 @@ int main(bool hard)
       );
 
   int shipsheet_ind = numbers_ind + 32; 
-  VDP_loadTileData( shipsheet_tileset.tiles, // tile data pointer
+  VDP_loadTileData( shipsheet2_tileset.tiles, // tile data pointer
       shipsheet_ind,    // index
-      80,        // number of tiles to load 
+      160,        // number of tiles to load 
       DMA_QUEUE         // transfer method
       );
 
-  int dino_ind = shipsheet_ind + 80; 
+  int dino_ind = shipsheet_ind + 160; 
   VDP_loadTileData( dino_frame_0, // tile data pointer
       dino_ind,    // index
       dino_frame_0_tiles,        // number of tiles to load 
@@ -156,10 +157,25 @@ int main(bool hard)
         0,  // Flip Horizontal
         shipsheet_ind + shipframe_offset  // index
         ) ,
-      6
+      6  // next sprite ID
       );
+
+  VDP_setSpriteFull(6, // sprite ID ( 0 to 79 )
+      x,   // X in screen coords
+      y,   // Y in screen coords
+      SPRITE_SIZE(4,4), // 1x1 to up to 4x4
+      TILE_ATTR_FULL(PAL3,    // PALette 
+        1,  // priority
+        0,  // Flip Vertical
+        0,  // Flip Horizontal
+        shipsheet_ind + shipframe_offset  // index
+        ) ,
+      7  // next sprite ID
+      );
+
+
   // tell VDP to draw  the 6 sprites we've defined.
-  s16 currSprite = 6 ;
+  s16 currSprite = 7 ;
   //for( int i=0; i < 
 
   /*
@@ -245,7 +261,21 @@ int main(bool hard)
         shipsheet_ind + shipframe_offset  // tile index
         );
 
-    s16 currSprite = 6 ;
+    // update position of srpite 5
+    VDP_setSpritePosition(6, // sprite ID ( 0 to 79 )
+        x,   // X in screen coords
+        y + 40  // Y in screen coords
+        );
+
+    // update animation frame of sprite 5 by setting tile index.
+    VDP_setSpriteTile(6, // sprite ID ( 0 to 79 )
+        shipsheet_ind + shipframe_offset + 80  // tile index for BLUE ship
+        );
+
+
+
+
+    s16 currSprite = 7 ;
     s16 totalSprites = 6;
     s16 dinoSprite = 6; 
     s16 offset = 0;
