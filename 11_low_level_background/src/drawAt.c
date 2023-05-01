@@ -15,9 +15,9 @@
  *
  * */
 
-void moveTile(char* dest, char* source, s16 startPixel, s16 lastTilePixel, s16 tiles )
+void drawAt(char* dest, char* source, s16 startPixel, s16 lastTilePixel, s16 tiles )
 { 
-  s16 startTile = startPixel >> 3; // divide by 8?
+  s16 startTile = startPixel >> 3; // divide by 8
   s16 startByte = startTile << 5;  
   s16 offsetInTile = (startPixel - (startTile << 3 )) >> 1;// we can only do 2 columns at at time anyway
   KLog_S3( "startTile:", startTile, " startByte:", startByte, " offsetInTile:", offsetInTile ); 
@@ -32,7 +32,6 @@ void moveTile(char* dest, char* source, s16 startPixel, s16 lastTilePixel, s16 t
       // if last tile pixle is <=3, copy 2 column (byte)
       // if last tile pixle is <=5, copy 4 column (byte)
       // last tile pixle <= 7
-
       if( t == tiles-1 && lastTilePixel <= 1 ) {
         // copy 1 set  for all 8
         char* dstPtr = dst;
@@ -84,7 +83,6 @@ void moveTile(char* dest, char* source, s16 startPixel, s16 lastTilePixel, s16 t
       }
     }
   }else if( offsetInTile == 1 ) {
-
     // if last tile pixle is <=1, copy 1 column (byte)
     // if last tile pixle is <=3, copy 2 column (byte)
     // if last tile pixle is <=5, copy 4 column (byte)
