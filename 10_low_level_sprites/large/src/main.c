@@ -15,9 +15,10 @@ int main(bool hard)
   //////////////////////////////////////////////////////////
   // Load the tilesets
   int dino_ind = TILE_USER_INDEX;
-  VDP_loadTileData( dino_frame_0, // tile data pointer
+  s16 currFrame = 1;
+  VDP_loadTileData( dino_0 + dino_frame_info[currFrame].start, // tile data pointer
       dino_ind,    // index
-      dino_frame_0_tiles,        // number of tiles to load 
+      dino_frame_info[currFrame].tileCount,        // number of tiles to load 
       DMA_QUEUE         // transfer method
       );
 
@@ -25,14 +26,14 @@ int main(bool hard)
   s16 offset = 0;
   s16 maxSprites = 0;
   s16 numSprites = 0;
-  for( s16 i=0; i < dino_frame_0_sprite_count; ++ i ){
+  for( s16 i=0; i < dino_frame_info[currFrame].spriteCount; ++ i ){
     if( i > 0 ) {
-      offset += dino_frame_0_sprite_info[i-1].tiles;
+      offset += dino_sprite_info[ dino_frame_info[currFrame].spriteInfoIndex + i-1].tiles;
     }
     VDP_setSpriteFull(numSprites, // sprite ID ( 0 to 79 )
-        100 + dino_frame_0_sprite_info[i].startX,   // X in screen coords
-        20 + dino_frame_0_sprite_info[i].startY,   // Y in screen coords
-        SPRITE_SIZE(dino_frame_0_sprite_info[i].width,4), // 1x1 to up to 4x4
+        100 + dino_sprite_info[ dino_frame_info[currFrame].spriteInfoIndex + i].startX,   // X in screen coords
+        20 + dino_sprite_info[ dino_frame_info[currFrame].spriteInfoIndex + i].startY,   // Y in screen coords
+        SPRITE_SIZE(dino_sprite_info[ dino_frame_info[currFrame].spriteInfoIndex + i].width,4), // 1x1 to up to 4x4
         TILE_ATTR_FULL(PAL1,    // PALette 
           1,  // priority
           0,  // Flip Vertical
@@ -51,6 +52,7 @@ int main(bool hard)
   {
     ++tick; 
     s16 dinoSprite = 6; 
+/*
     if ( tick % 10 == 0) {
       ++dinoFrame;
       if(dinoFrame> 6) {
@@ -245,6 +247,7 @@ int main(bool hard)
       // tell VDP to draw  the 6 sprites we've defined.
       VDP_updateSprites(maxSprites, DMA_QUEUE_COPY);
     }
+*/
 
     // do VBLankd processes
     SYS_doVBlankProcess();
