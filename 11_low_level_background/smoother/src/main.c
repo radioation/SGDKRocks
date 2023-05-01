@@ -1,6 +1,8 @@
 #include <genesis.h>
+#include "ground.h"
 
-void drawAt(char* dest, char* source, s16 startPixel, s16 lastTilePixel, s16 tiles );
+
+extern void drawAt(char* dest, char* source, s16 startPixel, s16 lastTilePixel, s16 tiles );
 
 // tiles for row example
 const u32 tile[] =
@@ -33,174 +35,6 @@ const u32 tile[] =
   0x80808080
 };
 
-// Tiles for column example
-const u32 tileSet0[288] =
-{
-  // tile 0
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x77777777,
-  0x66666666,
-  0x55555555,
-  0x44444444,
-  0x44444444,
-  // tile 1
-  0x33333333,
-  0x33333333,
-  0x22222222,
-  0x22222222,
-  0x11111111,
-  0x11111111,
-  0x88888888,
-  0x88888888,
-  // tile 2
-  0x88888888,
-  0x77777777,
-  0x77777777,
-  0x77777777,
-  0x77777777,
-  0x66666666,
-  0x66666666,
-  0x66666666,
-  // tile 3
-  0x66666666,
-  0x55555555,
-  0x55555555,
-  0x55555555,
-  0x55555555,
-  0x55555555,
-  0x55555555,
-  0x44444444,
-  // tile 4
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x33333333,
-  0x33333333,
-  // tile 5
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  // tile 6
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  // tile 7
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x11111111,
-  0x11111111,
-  0x11111111,
-  // tile 8
-  0x11111111,
-  0x11111111,
-  0x11111111,
-  0x11111111,
-  0x11111111,
-  0x11111111,
-  0x11111111,
-  0x11111111};
-
-const u32 tileSet1[72] =
-{
-  // tile 0
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x77770000,
-  0x66667777,
-  0x55556666,
-  0x44445555,
-  0x44444444,
-  // tile 1
-  0x33334444,
-  0x33333333,
-  0x22223333,
-  0x22222222,
-  0x11112222,
-  0x11111111,
-  0x88881111,
-  0x88888888,
-  // tile 2
-  0x88888888,
-  0x77778888,
-  0x77777777,
-  0x77777777,
-  0x77777777,
-  0x66667777,
-  0x66666666,
-  0x66666666,
-  // tile 3
-  0x66666666,
-  0x55556666,
-  0x55555555,
-  0x55555555,
-  0x55555555,
-  0x55555555,
-  0x55555555,
-  0x44445555,
-  // tile 4
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x44444444,
-  0x33334444,
-  0x33333333,
-  // tile 5
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  0x33333333,
-  // tile 6
-  0x22223333,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  // tile 7
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x22222222,
-  0x11112222,
-  0x11111111,
-  0x11111111,
-  // tile 8
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000,
-  0x00000000};
 
 int main(bool arg)
 {
@@ -227,7 +61,7 @@ int main(bool arg)
   //////////////////////////////////////////////////////////////////////
   // make a row of 40 tiles and load int VRAM
   s16 rowIndex = ind + 1;
-  u32 rowTiles[320];
+  u32 rowTiles[320]; // 40 tiles in a row * 8 rows per tile = 320 elements
   memset(rowTiles, 0, sizeof(rowTiles));
   memset(rowTiles, 0x0E, 32);             // set the first tile to 0x0E
   VDP_loadTileData((const u32 *)rowTiles, // tile data pointer
@@ -236,7 +70,7 @@ int main(bool arg)
       DMA_QUEUE              // transfer method
       );
 
-  // set 20 rows to use the tiles we loaded into VRAM
+  // set 23 rows to use the tiles we loaded into VRAM
   for (u16 y = 1; y < 20; ++y)
   {
     VDP_fillTileMapRectInc(BG_B,
@@ -253,20 +87,14 @@ int main(bool arg)
   }
 
   //////////////////////////////////////////////////////////////////////
-  // Load the tileSet0 into VRAM with VDP_loadTileData
-  // s16 tileSet0Index = rowIndex + 40;
-  // VDP_loadTileData( (const u32 *)tileSet0, // tile data pointer
-  //    tileSet0Index,   // index
-  //    9,   // number of tiles to load
-  //    DMA_QUEUE    // transfer method
-  //    );
-  s16 colIndex = rowIndex + 40;
-  u32 colTiles[72];
+  // Load the ground into VRAM with VDP_loadTileData
+  s16 colIndex = rowIndex + 40; // rowTiles is 40 actual tiles.
+  u32 colTiles[80]; // 10 rows in the column * 8 rows per tile is 80 elements.
   memset(colTiles, 0, sizeof(colTiles));
-  memcpy(colTiles, tileSet0, sizeof(colTiles)); // copy the column data into ram
+  memcpy(colTiles, ground, sizeof(colTiles) ); //sizeof(colTiles)); // copy the column data into ram
   VDP_loadTileData((const u32 *)colTiles,       // tile data pointer
       colIndex,                    // index
-      9,                           // number of tiles to load
+      10,                          // number of tiles to load
       DMA_QUEUE                    // transfer method
       );
 
@@ -282,15 +110,17 @@ int main(bool arg)
         x,                        // x
         20,                       // y
         1,                        // width
-        9                         // height
+        10                         // height (10 tiles)
         );
   }
 
   s16 offset = 1;
-  s16 colSet = 0;
+  s16 groundFrame = 0;
   s16 delay = 0;
   while (1)
   {
+
+    ///////////////////////////////////////////////////////
     // update the row data
     memset(rowTiles, 0, sizeof(rowTiles));
     ++offset	;
@@ -304,37 +134,35 @@ int main(bool arg)
     s16 tiles = 3;
 
     drawAt( &rowTiles[0], &tile[0],  startPixel, lastTilePixel, tiles );
-
-
-    // load into VRAM
+    // load row into VRAM
     VDP_loadTileData((const u32 *)rowTiles, // tile data pointer
         rowIndex,              // index
         40,                    // number of tiles to load
         DMA_QUEUE              // transfer method
         );
 
+    ///////////////////////////////////////////////////////
     // update the col data
-    if (colSet == 1)
-    {
-      memcpy(colTiles, tileSet1, sizeof(colTiles));
-    }
-    else
-    {
-      memcpy(colTiles, tileSet0, sizeof(colTiles));
-    }
-    colSet += 1;
-    if (colSet > 1)
-    {
-      colSet = 0;
-    }
+
+    memcpy(colTiles, ground + (groundFrame * 80),  sizeof(colTiles ));
     VDP_loadTileData((const u32 *)colTiles, // tile data pointer
         colIndex,              // index
-        9,                     // number of tiles to load
+        10,                     // number of tiles to load
         DMA_QUEUE              // transfer method
         );
+    delay +=1;
+    if( delay > 3 ) {
+        delay = 0;
+        groundFrame += 1;
+        if (groundFrame > 5)
+        {
+            groundFrame = 0;
+        }
+    }
 
     // let SGDK do its thing.
-    VDP_waitVSync();
+    //VDP_waitVSync();
+
     SYS_doVBlankProcess();
   }
 
