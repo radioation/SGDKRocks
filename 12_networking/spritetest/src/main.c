@@ -7,7 +7,6 @@ u8 buttons, buttons_prev;
 
 int main()
 {
-	VDP_setScreenWidth256();
 
 	// setup networking
 	SYS_disableInts();                      // Disable interrupts
@@ -58,7 +57,8 @@ int main()
 	waitMs(2000);
 
 
-	// setup graphics
+	// setup GAME  graphics
+	VDP_setScreenWidth256();
 	PAL_setPalette( PAL0, starfield_pal.data, CPU);
 	PAL_setPalette( PAL1, ships_pal.data, CPU);
 	PAL_setPalette( PAL2, rocks_pal.data, CPU);
