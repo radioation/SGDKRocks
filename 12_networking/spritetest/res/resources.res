@@ -9,3 +9,6 @@ PALETTE starfield_pal "bg/starfield.png"
 PALETTE ships_pal "sprites/shipsheet.png" 
 PALETTE rocks_pal "sprites/rocksheet.png" 
 PALETTE ufos_pal "sprites/ufosheet.png" 
+
+
+
