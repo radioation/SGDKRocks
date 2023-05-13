@@ -76,17 +76,33 @@ int main()
 			recCount = 0;
 			VDP_drawText("sent", cursor_x, cursor_y); cursor_x+=4;
 
-		}		
+			startTimer(0);
 
-
-		while(NET_RXReady() )
-		{
+			while(NET_RXReady() )
+			{
 				u8 byte = NET_readByte();
 				if (cursor_x >= 40) { cursor_x=0; cursor_y++; }
 				if (cursor_y >= 25) { cursor_x=0; cursor_y=1; }
 				sprintf(str, "%d", byte); // Convert to readable number
 				VDP_drawText(str, cursor_x, cursor_y); cursor_x+=4;
-		}
+			}
+
+			// get number of subticks sine startTimer(0) call
+			//   where SGDK timer.h defines  SUBTICKPERSECOND    76800
+			u32 elapsedTime = getTimer(0, FALSE);
+			sprintf(str, "time: %ld. ", elapsedTime); // Convert to readable number
+			cursor_x = 0;
+			cursor_y++;
+			VDP_drawText(str, cursor_x, cursor_y); cursor_y++;
+			// been getting about 8960 on my Sega Genesis 1 and 9040 on MegaSG. 
+			// So lets say reading 128 bytes takes about 9200 subticks 
+			//      9200 subticks / ( 76800 (subticks/second) )
+			//      ~ 0.12 seconds ~ 120 ms to read 128 bytes.  
+			//  I shold still consider splitting thigns up into sub parts
+
+
+
+		}		
 
 
 		buttons_prev = buttons;
