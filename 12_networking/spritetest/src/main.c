@@ -6,6 +6,7 @@ int cursor_x, cursor_y;
 u8 buttons, buttons_prev;
 
 #define NUM_ROCKS 8
+#define NUM_SHOTS 8
 
 
 int main()
@@ -101,6 +102,10 @@ int main()
 		rockSprites[i] = SPR_addSprite( &rocks, 10, 10, TILE_ATTR( PAL2, 0, FALSE, FALSE ));
 	}
 
+	Sprite *shotSprites[NUM_SHOTS];
+	for( s16 i=0; i < NUM_SHOTS; ++i ) {
+		shotSprites[i] = SPR_addSprite( &shots, 10, 10, TILE_ATTR( PAL1, 0, FALSE, FALSE ));
+	}
 	// attach and get ID
 	// from now on send ID
 
@@ -110,13 +115,14 @@ int main()
 	u16 tick = 0;
 	u8 shipData[36]; // 4 players have 3 x 16 bit (2 byte) vas)
 	u8 rockData[36]; 
+	u8 shotData[36]; 
 	u32 maxTime = 0;
 	u16 bytesPos = 0;
 	while(1) // Loop forever and print out any data we receive in the hardware receive fifo
 	{ 
 		//startTimer(0);
 		if( tick == 0 ) {
-			
+
 			// always send player control
 			// '0x0100_XXXX' sends player control
 			u16 joypadState = JOY_readJoypad( JOY_1 );
@@ -139,7 +145,7 @@ int main()
 			NET_sendByte(command);
 
 			bytesPos = 0;
-	                waitMs(4);
+			waitMs(4);
 			while(!NET_RXReady()){
 			}
 			while(NET_RXReady()) // while data in hardware receive FIFO
@@ -178,12 +184,12 @@ int main()
 
 
 			}
-		
+
 
 		} else if (tick == 1 ) {
+			waitMs(4);
 			NET_sendByte(64); //64 get rocks
 			bytesPos = 0;
-	                waitMs(4);
 			while(!NET_RXReady()){
 			}
 			//while( bytesPos < 2 * NUM_ROCKS ) {
@@ -195,15 +201,31 @@ int main()
 
 			if( bytesPos >= 6 ) {
 				for( u16 r = 0; r < NUM_ROCKS; ++r ) {
-					SPR_setPosition( rockSprites[r], rockData[r*2], rockData[r*2+1]);
+					SPR_setPosition( rockSprites[r], rockData[r*3+1], rockData[r*3+2]);
+				}
+			}
+
+
+		} else if (tick == 2 ) {
+			waitMs(4);
+		
+			NET_sendByte(128); //128 get shots
+			bytesPos = 0;
+			while(!NET_RXReady()){
+			}
+			while(NET_RXReady()) // while data in hardware receive FIFO
+			{   
+				shotData[bytesPos] = NET_readByte(); // Retrieve byte from RX hardware Fifo directly
+				bytesPos++;
+			}
+
+			if( bytesPos >= 6 ) {
+				for( u16 r = 0; r < NUM_SHOTS; ++r ) {
+					SPR_setPosition( shotSprites[r], shotData[r*3+1], shotData[r*3+2]);
 				}
 			}
 		
-
-		} else if (tick == 2 ) {
-			//NET_sendByte(128); //128 get shots
 		}
-
 
 
 		//   where SGDK timer.h defines  SUBTICKPERSECOND    76800
@@ -219,15 +241,15 @@ int main()
 
 		SPR_update();
 		++tick;
-		if( tick > 2 ) {
+		if( tick > 3 ) {
 			tick = 0;
 		}
 		SYS_doVBlankProcess(); 
-	}
+		}
 
-	//------------------------------------------------------------------
-	return(0);
-}
+		//------------------------------------------------------------------
+		return(0);
+		}
 
 
 
