@@ -5,7 +5,7 @@
 int cursor_x, cursor_y;
 u8 buttons, buttons_prev;
 
-#define NUM_ROCKS 10
+#define NUM_ROCKS 8
 
 
 int main()
@@ -63,7 +63,7 @@ int main()
 	VDP_clearTextArea(0,0,40,24);
 	// setup GAME  graphics
 	VDP_setScreenWidth256();
-	//PAL_setPalette( PAL0, starfield_pal.data, CPU);
+	PAL_setPalette( PAL0, starfield_pal.data, CPU);
 	PAL_setPalette( PAL1, ships_pal.data, CPU);
 	PAL_setPalette( PAL2, rocks_pal.data, CPU);
 	PAL_setPalette( PAL3, ufos_pal.data, CPU);
@@ -71,7 +71,7 @@ int main()
 	//VDP_setBackgroundColor(51); // Blue background
 
 	int starfieldInd = TILE_USER_INDEX;
-	//VDP_drawImageEx(BG_A, &starfield, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, starfieldInd), 0, 0, FALSE, TRUE);
+	VDP_drawImageEx(BG_A, &starfield, TILE_ATTR_FULL(PAL0, FALSE, FALSE, FALSE, starfieldInd), 0, 0, FALSE, TRUE);
 
 
 	// setup sprites
@@ -108,122 +108,121 @@ int main()
 	// expecting 20 rock chunks of 2 * 2 = 4 bytes each ( 60 bytes )
 	// 84 bytes total?
 	u16 tick = 0;
-	u8 networkData[36]; // 4 players have 3 x 16 bit (2 byte) vas)
+	u8 shipData[36]; // 4 players have 3 x 16 bit (2 byte) vas)
+	u8 rockData[36]; 
+	u32 maxTime = 0;
+	u16 bytesPos = 0;
 	while(1) // Loop forever and print out any data we receive in the hardware receive fifo
 	{ 
-		startTimer(0);
-		// always send player control
-		// '0x0100_XXXX' sends player control
-		u16 joypadState = JOY_readJoypad( JOY_1 );
-		u8 command = 64;
-		if( joypadState & BUTTON_LEFT ) {
-			command += 0b00000001 ;
+		//startTimer(0);
+		if( tick == 0 ) {
+			
+			// always send player control
+			// '0x0100_XXXX' sends player control
+			u16 joypadState = JOY_readJoypad( JOY_1 );
+			u8 command = 0;
+			if( joypadState & BUTTON_LEFT ) {
+				command += 0b00000001 ;
+			}
+			if( joypadState & BUTTON_RIGHT ) {
+				command += 0b00000010 ;
+			}
+			if( joypadState & BUTTON_UP ) {
+				command += 0b00000100 ;
+			}
+			if( joypadState & BUTTON_DOWN ) {
+				command += 0b00001000 ;
+			}
+			if( joypadState & BUTTON_A ) {
+				command += 0b00010000 ;
+			}
+			NET_sendByte(command);
+
+			bytesPos = 0;
+	                waitMs(4);
+			while(!NET_RXReady()){
+			}
+			while(NET_RXReady()) // while data in hardware receive FIFO
+			{   
+				shipData[bytesPos] = NET_readByte(); // Retrieve byte from RX hardware Fifo directly
+				bytesPos++;
+			}
+
+
+			if( bytesPos >= 12 ) {
+
+				// Convert the first 2 bytes to a short int
+				s16 dir = shipData[0] & 0x0f;
+				playerX1 = shipData[1];
+				playerY1 = shipData[2];
+				SPR_setPosition( playerSprite1, playerX1, playerY1 );
+				SPR_setFrame(playerSprite1, dir);
+
+				dir = shipData[3] & 0x0f;
+				playerX2 = shipData[4];
+				playerY2 = shipData[5];
+				SPR_setPosition( playerSprite2, playerX2, playerY2 );
+				SPR_setFrame(playerSprite2, dir);
+
+				dir = shipData[6] & 0x0f;
+				playerX3 = shipData[7];
+				playerY3 = shipData[8];
+				SPR_setPosition( playerSprite3, playerX3, playerY3 );
+				SPR_setFrame(playerSprite3, dir);
+
+				dir = shipData[9] & 0x0f;
+				playerX4 = shipData[10];
+				playerY4 = shipData[11];
+				SPR_setPosition( playerSprite4, playerX4, playerY4 );
+				SPR_setFrame(playerSprite4, dir);
+
+
+			}
+		
+
+		} else if (tick == 1 ) {
+			NET_sendByte(64); //64 get rocks
+			bytesPos = 0;
+	                waitMs(4);
+			while(!NET_RXReady()){
+			}
+			//while( bytesPos < 2 * NUM_ROCKS ) {
+			while(NET_RXReady()) // while data in hardware receive FIFO
+			{   
+				rockData[bytesPos] = NET_readByte(); // Retrieve byte from RX hardware Fifo directly
+				bytesPos++;
+			}
+
+			if( bytesPos >= 6 ) {
+				for( u16 r = 0; r < NUM_ROCKS; ++r ) {
+					SPR_setPosition( rockSprites[r], rockData[r*2], rockData[r*2+1]);
+				}
+			}
+		
+
+		} else if (tick == 2 ) {
+			//NET_sendByte(128); //128 get shots
 		}
-		if( joypadState & BUTTON_RIGHT ) {
-			command += 0b00000010 ;
-		}
-		if( joypadState & BUTTON_UP ) {
-			command += 0b00000100 ;
-		}
-		if( joypadState & BUTTON_DOWN ) {
-			command += 0b00001000 ;
-		}
-		NET_sendByte(command);
-		++tick;
 
-
-		/*
-# MAKE FIRST BYTE A TAG FOR THE TYPE OF DATA SENT 
-# 0 player pos
-# 1 player shots
-# 2 ROCKS
-*/
-		// sometimes
-		/*
-		// '0' request the player positions
-		NET_sendByte(0);
-		u16 bytesPos = 0;
-		while(NET_RXReady()) // while data in hardware receive FIFO
-		{   
-		networkData[bytesPos] = NET_readByte(); // Retrieve byte from RX hardware Fifo directly
-		bytesPos++;
-		//sprintf(str, "%d", byte); // Convert
-		//u16 bytesAvailable = NET_bytesAvailable(); // Retrieve byte from RX hardware Fifo directly
-		//sprintf(str, "%d", bytesAvailable); // Convert
-		//VDP_drawText(str, cursor_x, cursor_y);
-		}
-
-		//sprintf(str, "bp: %d", bytesPos); // Convert
-		//VDP_drawText(str, cursor_x+5, cursor_y);
-		if( bytesPos == 12 ) {
-
-		// Convert the first 2 bytes to a short int
-		//s16 a = (networkData[0] << 8) | networkData[1];
-		s16 dir = networkData[0] & 0x0f;
-		playerX1 = networkData[1];
-		playerY1 = networkData[2];
-		SPR_setPosition( playerSprite1, playerX1, playerY1 );
-		SPR_setFrame(playerSprite1, dir);
-
-		dir = networkData[3] & 0x0f;
-		playerX2 = networkData[4];
-		playerY2 = networkData[5];
-		SPR_setPosition( playerSprite2, playerX2, playerY2 );
-		SPR_setFrame(playerSprite2, dir);
-
-		dir = networkData[6] & 0x0f;
-		playerX3 = networkData[7];
-		playerY3 = networkData[8];
-		SPR_setPosition( playerSprite3, playerX3, playerY3 );
-		SPR_setFrame(playerSprite3, dir);
-
-		dir = networkData[9] & 0x0f;
-		playerX4 = networkData[10];
-		playerY4 = networkData[11];
-		SPR_setPosition( playerSprite4, playerX4, playerY4 );
-		SPR_setFrame(playerSprite4, dir);
-
-
-		}
-
-
-
-		NET_sendByte(128);
-
-
-		bytesPos = 0;
-		while( bytesPos < 2 * NUM_ROCKS ) {
-		while(NET_RXReady()) // while data in hardware receive FIFO
-		{   
-		networkData[bytesPos] = NET_readByte(); // Retrieve byte from RX hardware Fifo directly
-		bytesPos++;
-		//sprintf(str, "%d", byte); // Convert
-		//u16 bytesAvailable = NET_bytesAvailable(); // Retrieve byte from RX hardware Fifo directly
-		//sprintf(str, "%d", bytesAvailable); // Convert
-		//VDP_drawText(str, cursor_x, cursor_y);
-		}
-		}
-		sprintf(str, "bp2: %d", bytesPos); // Convert
-		VDP_drawText(str, cursor_x+5, cursor_y+1);
-
-		if( bytesPos >= 6 ) {
-		for( u16 r = 0; r < NUM_ROCKS; ++r ) {
-		SPR_setPosition( rockSprites[r], networkData[r*2], networkData[r*2+1]);
-		}
-	}
-	*/
 
 
 		//   where SGDK timer.h defines  SUBTICKPERSECOND    76800
-		u32 elapsedTime = getTimer(0, FALSE);
-	sprintf(str, "time: %ld. ", elapsedTime); // Convert to readable number
-	cursor_x = 0;
-	cursor_y++;
-	VDP_drawText(str, 10, 3); cursor_y++;
+		//elapsedTime = getTimer(0, FALSE);
+		//if( elapsedTime > maxTime ) {
+		//	maxTime = elapsedTime;
+		//}
+		//sprintf(str, "e sgfx time: %ld. ", elapsedTime); // Convert to readable number
+		//VDP_drawText(str, 10, 4);
+		//sprintf(str, "m sgfx time: %ld. ", maxTime); // Convert to readable number
+		//VDP_drawText(str, 10, 5);
 
 
-	SPR_update();
-	SYS_doVBlankProcess(); 
+		SPR_update();
+		++tick;
+		if( tick > 2 ) {
+			tick = 0;
+		}
+		SYS_doVBlankProcess(); 
 	}
 
 	//------------------------------------------------------------------
