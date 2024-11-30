@@ -77,7 +77,7 @@ int main(bool hard)
 
 			// change the mouse position.
 			posX = posX + x_delta;
-			posY = posY + y_delta;
+			posY = posY - y_delta;
 			// save mouse values for next calculation
 			prev_x_mouse = x_mouse;
 			prev_y_mouse = y_mouse;
