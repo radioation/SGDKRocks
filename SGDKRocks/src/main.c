@@ -52,7 +52,7 @@ fix32 ApproxAtan(fix32 z)
 {
     const fix32 n1 = FIX32(0.97239411f);
     const fix32 n2 = FIX32(-0.19194795f);
-    return fix32Mul(fix32Add( n1 ,fix32Mul( n2 ,fix32Mul( z, z))), z);
+    return fix32Mul( n1  +fix32Mul( n2 ,fix32Mul( z, z)), z);
 }
 
 
@@ -78,7 +78,7 @@ u16 ApproxAtan2(fix32 y, fix32 x)
 							} else {
 								// x positive, y negative: upper half of QUAD IV ( -pi/4 to 0 -> 897 through 1024 )
 								//   I = m*atan + b  | b = 1024,  m = 127/(-0.82)  =  161.701
-								fix32 i = fix32Add( fix32Mul(FIX32(154.878),tempAtan), FIX32(1024));
+								fix32 i =  fix32Mul(FIX32(154.878),tempAtan) + FIX32(1024);
 								return fix32ToInt(i);
 							}
 						}
@@ -90,7 +90,7 @@ u16 ApproxAtan2(fix32 y, fix32 x)
 							//  ( 3PI/4-PI  -> 384-512 )
 							//   m = 127/0.82 = 154.878  b = 24.683
 							//return fix32Add(ApproxAtan(z), PI_1);
-								fix32 i = fix32Add( fix32Mul(FIX32(154.878),fix32Add(tempAtan,PI_1)), FIX32(24.683));
+								fix32 i =  fix32Mul(FIX32(154.878),tempAtan + PI_1)+ FIX32(24.683);
 								return fix32ToInt(i);
 						}
 						else
@@ -101,7 +101,7 @@ u16 ApproxAtan2(fix32 y, fix32 x)
 							//return fix32Sub(ApproxAtan(z), PI_1);
 							//   
 							//   m = 127/0.82 = 154.878  b = 998.317
-							fix32 i = fix32Add( fix32Mul(FIX32(154.878),fix32Sub(tempAtan,PI_1)), FIX32(998.317));
+							fix32 i = fix32Mul(FIX32(154.878),(tempAtan-PI_1))+ FIX32(998.317);
 							return fix32ToInt(i);
 
 						}
@@ -116,7 +116,7 @@ u16 ApproxAtan2(fix32 y, fix32 x)
 							// atan2(y,x) = PI/2 - atan(x/y) if |y/x| > 1, y > 0
 							//return fix32Sub(PI_2, ApproxAtan(z));
 							//   m = 255/1.50 = 170      b = -11.4
-							fix32 i = fix32Sub( fix32Mul(FIX32(170.0),fix32Sub(PI_2,tempAtan)), FIX32(11.4));
+							fix32 i = fix32Mul(FIX32(170.0),(PI_2-tempAtan))- FIX32(11.4);
 							return fix32ToInt(i);
 						}
 						else
@@ -124,7 +124,7 @@ u16 ApproxAtan2(fix32 y, fix32 x)
 							// atan2(y,x) = -PI/2 - atan(x/y) if |y/x| > 1, y < 0
 							//return fix32Sub(-PI_2, ApproxAtan(z));
 							//   m = 255/1.50 = 170      b = 1034.4
-							fix32 i = fix32Add( fix32Mul(FIX32(-170.0),fix32Add(PI_2,tempAtan)), FIX32(1034.4));
+							fix32 i = ( fix32Mul(FIX32(-170.0),(PI_2+tempAtan))+ FIX32(1034.4));
 							return fix32ToInt(i);
 						}
 				}
@@ -285,8 +285,8 @@ void inputCallback(u16 joy, u16 changed, u16 state)
 							XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
 
 							u16 rot = fix32ToInt(playerRotation);
-							playerShots[i].pos_x = fix32Add(player.pos_x, FIX32((PLAYER_WIDTH - PLAYER_SHOT_WIDTH) / 2)) + fix32Mul(deltaX[rot], FIX32(2.0));
-							playerShots[i].pos_y = fix32Add(player.pos_y, FIX32((PLAYER_HEIGHT - PLAYER_SHOT_WIDTH) / 2)) + fix32Mul(deltaY[rot], FIX32(2.0));
+							playerShots[i].pos_x = (player.pos_x+ FIX32((PLAYER_WIDTH - PLAYER_SHOT_WIDTH) / 2)) + fix32Mul(deltaX[rot], FIX32(2.0));
+							playerShots[i].pos_y = (player.pos_y+ FIX32((PLAYER_HEIGHT - PLAYER_SHOT_WIDTH) / 2)) + fix32Mul(deltaY[rot], FIX32(2.0));
 							playerShots[i].vel_x = fix32Mul(deltaX[rot], FIX32(2.0));
 							playerShots[i].vel_y = fix32Mul(deltaY[rot], FIX32(2.0));
 							playerShots[i].active = TRUE;
@@ -326,9 +326,9 @@ void handleInput()
 		{
 				// doPlayerUpdate = TRUE;
 				int rot = fix32ToInt(playerRotation);
-				fix32 temp_x = fix32Add(player.vel_x, fix32Mul(acc, deltaX[rot]));
-				fix32 temp_y = fix32Add(player.vel_y, fix32Mul(acc, deltaY[rot]));
-				fix32 speedsqr = fix32Add(fix32Mul(temp_x, temp_x), fix32Mul(temp_y, temp_y));
+				fix32 temp_x = (player.vel_x+ fix32Mul(acc, deltaX[rot]));
+				fix32 temp_y = (player.vel_y+ fix32Mul(acc, deltaY[rot]));
+				fix32 speedsqr =(fix32Mul(temp_x, temp_x)+ fix32Mul(temp_y, temp_y));
 
 				if (speedsqr < FIX32(4))
 				{ // square of 1.2 == 1.44
@@ -350,12 +350,12 @@ void handleInput()
 			++doDec;
 			if( doDec == 10) {
 				doDec = 0;
-				fix32 speedsqr = fix32Add(fix32Mul(player.vel_x, player.vel_x), fix32Mul(player.vel_y, player.vel_y));
+				fix32 speedsqr = (fix32Mul(player.vel_x, player.vel_x)+ fix32Mul(player.vel_y, player.vel_y));
 				u16 dir = ApproxAtan2(player.vel_y, player.vel_x);
 				fix32 s = sinFix32(dir);
 				fix32 c = cosFix32(dir);
 				fix16 speed = fix16Sqrt( fix32ToFix16(speedsqr));
-        speed = fix16Sub( speed, FIX16(0.1));
+        speed =  speed- FIX16(0.1);
 				if( speed < FIX16(0.1)){
 					player.vel_x = FIX32(0);
 					player.vel_y = FIX32(0);
@@ -370,8 +370,8 @@ void handleInput()
 void update()
 {
 		// if( doPlayerUpdate == TRUE ) {
-		player.pos_x = fix32Add(player.pos_x, player.vel_x);
-		player.pos_y = fix32Add(player.pos_y, player.vel_y);
+		player.pos_x = (player.pos_x+ player.vel_x);
+		player.pos_y = (player.pos_y+ player.vel_y);
 
 		if (player.pos_x < FIX32(-6.0))
 		{

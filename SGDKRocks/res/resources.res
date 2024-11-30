@@ -12,8 +12,8 @@ SPRITE rock "sprites/rock.png" 4 4 NONE 8
 SPRITE shot "sprites/shot_sheet.png" 1 1 NONE 2
 SPRITE explosion "sprites/explosion.png" 3 3 NONE 0
 
-WAV  laser_snd "sounds/laser.wav"  4
-WAV  explosion_snd "sounds/explosion.wav"  4
+WAV  laser_snd "sounds/laser.wav"  XGM
+WAV  explosion_snd "sounds/explosion.wav"  XGM
 
 PALETTE  shot_pal "sprites/shot_sheet.png" 
 PALETTE  plane_pal "imgs/plane_a.png" 
