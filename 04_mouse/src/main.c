@@ -72,12 +72,12 @@ int main(bool hard)
 
 
 			// Figure out how much the mice have moved.  
-			fix32 x_delta = fix32Div( fix32Sub(FIX32(x_mouse), FIX32(prev_x_mouse)), sensitivity);
-			fix32 y_delta = fix32Div( fix32Sub(FIX32(prev_y_mouse), FIX32(y_mouse)), sensitivity);
+			fix32 x_delta = fix32Div( FIX32(x_mouse) - FIX32(prev_x_mouse), sensitivity);
+			fix32 y_delta = fix32Div( FIX32(prev_y_mouse) - FIX32(y_mouse), sensitivity);
 
 			// change the mouse position.
-			posX = fix32Add( posX, x_delta);
-			posY = fix32Sub( posY, y_delta);
+			posX = posX + x_delta;
+			posY = posY + y_delta;
 			// save mouse values for next calculation
 			prev_x_mouse = x_mouse;
 			prev_y_mouse = y_mouse;
