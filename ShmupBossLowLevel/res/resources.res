@@ -6,10 +6,10 @@ TILESET shipsheet_tileset "sprites/shipsheet.png"  NONE NONE
 TILESET shots_tileset "sprites/shots.png" NONE  NONE
 TILESET boomsheet_tileset "sprites/boomsheet.png" NONE  NONE
 
-WAV    laser1   "sounds/laser1.wav"  4
-WAV    laser2   "sounds/laser2.wav"  4
-WAV    laserx_4 "sounds/laserx_4.wav"  4
-WAV  explosion6 "sounds/explosion.wav"  4
+WAV    laser1   "sounds/laser1.wav"  XGM
+WAV    laser2   "sounds/laser2.wav"  XGM
+WAV    laserx_4 "sounds/laserx_4.wav"  XGM
+WAV  explosion6 "sounds/explosion.wav"  XGM
 
 
 

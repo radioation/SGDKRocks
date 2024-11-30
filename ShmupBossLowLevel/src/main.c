@@ -741,7 +741,7 @@ int main(bool hard)
     palette_flash_lower[i] = 0x0EEE;
   }
   // set scrolling mode to LINE for horizontal and TILE for vertical
-  VDP_setScrollingMode(HSCROLL_LINE, VSCROLL_2TILE);
+  VDP_setScrollingMode(HSCROLL_LINE, VSCROLL_COLUMN);
 
   // Setup background 
   // get tile positions in VRAM.
