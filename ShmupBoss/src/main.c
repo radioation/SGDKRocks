@@ -437,7 +437,7 @@ static void checkCollisions() {
       --boss_lgun_hb.hitpoints;
       playerShots[j].active = FALSE;
       SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion(  playerShots[j].pos_x - FIX16(16), playerShots[j].pos_y - FIX16(16) );
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
@@ -452,7 +452,7 @@ static void checkCollisions() {
       --boss_rgun_hb.hitpoints;
       playerShots[j].active = FALSE;
       SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion(  playerShots[j].pos_x - FIX16(16), playerShots[j].pos_y - FIX16(16) );
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
@@ -468,7 +468,7 @@ static void checkCollisions() {
       --boss_mgun_hb.hitpoints;
       playerShots[j].active = FALSE;
       SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion(  playerShots[j].pos_x - FIX16(16), playerShots[j].pos_y - FIX16(16) );
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
@@ -484,7 +484,7 @@ static void checkCollisions() {
       --boss_lvent_hb.hitpoints;
       playerShots[j].active = FALSE;
       SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion(  playerShots[j].pos_x - FIX16(16),playerShots[j].pos_y - FIX16(16) );
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
@@ -499,7 +499,7 @@ static void checkCollisions() {
       --boss_rvent_hb.hitpoints;
       playerShots[j].active = FALSE;
       SPR_setVisibility( playerShots[j].sprite, HIDDEN);
-      addExplosion(  fix16Sub(playerShots[j].pos_x, FIX16(16)), fix16Sub(playerShots[j].pos_y, FIX16(16)) );
+      addExplosion(  playerShots[j].pos_x - FIX16(16), playerShots[j].pos_y - FIX16(16) );
       if( flashScreen < 1 ) {
         flashScreen = 3;
       }
@@ -610,7 +610,7 @@ int main(bool hard)
   memcpy(&palette[0], planea_pal.data, 32 );
 
   // set scrolling mode to LINE for horizontal and TILE for vertical
-  VDP_setScrollingMode(HSCROLL_LINE, VSCROLL_2TILE);
+  VDP_setScrollingMode(HSCROLL_LINE, VSCROLL_COLUMN);
 
   // get tile positions in VRAM.
   int ind = TILE_USER_INDEX;

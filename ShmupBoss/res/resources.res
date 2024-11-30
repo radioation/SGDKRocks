@@ -6,10 +6,10 @@ SPRITE ship "sprites/ship.png" 4 4 NONE
 SPRITE shots "sprites/shots.png" 1 1 NONE 
 SPRITE boomsheet "sprites/boomsheet.png" 4 4 NONE 
 
-WAV    laser1   "sounds/laser1.wav"  4
-WAV    laser2   "sounds/laser2.wav"  4
-WAV    laserx_4 "sounds/laserx_4.wav"  4
-WAV  explosion6 "sounds/explosion.wav"  4
+WAV    laser1   "sounds/laser1.wav"  XGM
+WAV    laser2   "sounds/laser2.wav"  XGM
+WAV    laserx_4 "sounds/laserx_4.wav"  XGM
+WAV  explosion6 "sounds/explosion.wav"  XGM
 
 
 
