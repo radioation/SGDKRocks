@@ -4,7 +4,7 @@ use tokio::spawn;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let listener = TcpListener::bind("10.201.138.151:8080").await?;
+    let listener = TcpListener::bind("10.86.22.6:8080").await?;
 
     loop {
         let (socket, _) = listener.accept().await?;

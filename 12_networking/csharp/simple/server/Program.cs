@@ -37,6 +37,8 @@ namespace TcpEchoServer
 
 					while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
 					{
+						var str = System.Text.Encoding.Default.GetString(buffer);
+						Console.WriteLine( str );
 						await stream.WriteAsync(buffer, 0, bytesRead);
 					}
 				}

@@ -51,14 +51,14 @@ int main()
 
     waitMs(2000);
 
-    NET_pingIP(cursor_x, cursor_y, 4, "10.201.138.151"); cursor_y+=6;
+    NET_pingIP(cursor_x, cursor_y, 4, "10.86.22.6"); cursor_y+=6;
 
     waitMs(2000);
 
     VDP_drawText("Rebooting adapter...", cursor_x ,cursor_y); cursor_y+=2;
     NET_resetAdapter();
 
-    NET_connect(cursor_x, cursor_y, "10.201.138.151:8080"); cursor_x=0; cursor_y++;
+    NET_connect(cursor_x, cursor_y, "10.86.22.6:8081"); cursor_x=0; cursor_y++;
 
     while(1) // Loop forever and print out any data we receive in the hardware receive fifo
     { 
