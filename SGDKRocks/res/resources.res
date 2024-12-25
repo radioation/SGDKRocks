@@ -3,6 +3,7 @@ MAP plane_a_map "imgs/plane_a.png" plane_a_tileset NONE 0
 
 SPRITE ship "sprites/ship.png" 2 2 NONE
 SPRITE ufo "sprites/ufo.png" 3 3 NONE 1
+SPRITE small_ufo "sprites/small_ufo.png" 2 2 NONE 1
 
 SPRITE xs_rock "sprites/xs_rock.png" 1 1 NONE 4
 SPRITE small_rock "sprites/small_rock.png" 2 2 NONE 4
