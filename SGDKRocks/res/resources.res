@@ -1,6 +1,9 @@
 TILESET plane_a_tileset "imgs/plane_a.png" NONE ALL
 MAP plane_a_map "imgs/plane_a.png" plane_a_tileset NONE 0
 
+IMAGE blue_wing "imgs/blue_wing.png" NONE ALL
+
+
 SPRITE ship "sprites/ship.png" 2 2 NONE
 SPRITE ufo "sprites/ufo.png" 3 3 NONE 1
 SPRITE small_ufo "sprites/small_ufo.png" 2 2 NONE 1
