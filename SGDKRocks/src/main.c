@@ -12,7 +12,6 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 // Define player constants
-#define PLAYER_FRAME_COUNT  32
 #define PLAYER_WIDTH        24
 #define PLAYER_HEIGHT       24
 #define PLAYER_SHOT_WIDTH   8 
@@ -31,6 +30,10 @@
 // Define map/world constants
 #define MAP_WIDTH           640
 #define MAP_HEIGHT          640
+// remember fix16 is -512 to 511
+
+#define MAP_HALF_WIDTH     320 
+#define MAP_HALF_HEIGHT    320
 
 #define SCR_WIDTH           320
 #define SCR_HEIGHT          224 
@@ -40,9 +43,9 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 // World/Map variables
-Map *map_a;
-static s16 camPosX; // relative to total world map
-static s16 camPosY; // relative to total world map
+Map *map_b;
+s16 camPosX; // relative to total world map
+s16 camPosY; // relative to total world map
 
 static u8 tick = 0; // just a commn tick for everyone to use
 /*
@@ -194,27 +197,27 @@ void updateCameraPos()
     }
 
     // handle edges
-    if (newCamX < 0)
+    if (newCamX < -MAP_HALF_WIDTH)
     {
-        newCamX = 0;
+        newCamX = -MAP_HALF_WIDTH;
     }
-    else if (newCamX > (MAP_WIDTH - SCR_WIDTH))
+    else if (newCamX > (MAP_HALF_WIDTH - SCR_WIDTH))
     {
-        newCamX = MAP_WIDTH - SCR_WIDTH;
-    }
-
-    if (newCamY < 0)
-    {
-        newCamY = 0;
-    }
-    else if (newCamY > (MAP_HEIGHT - SCR_HEIGHT))
-    {
-        newCamY = MAP_HEIGHT - SCR_HEIGHT;
+        newCamX = MAP_HALF_WIDTH - SCR_WIDTH;
     }
 
-    camPosX = newCamX;
-    camPosY = newCamY;
-    MAP_scrollTo(map_a, camPosX, camPosY);
+    if (newCamY < -MAP_HALF_HEIGHT)
+    {
+        newCamY = -MAP_HALF_HEIGHT;
+    }
+    else if (newCamY > (MAP_HALF_HEIGHT - SCR_HEIGHT))
+    {
+        newCamY = MAP_HALF_HEIGHT - SCR_HEIGHT;
+    }
+
+    camPosX = newCamX + MAP_HALF_WIDTH;
+    camPosY = newCamY + MAP_HALF_HEIGHT;
+    MAP_scrollTo(map_b, camPosX, camPosY);
 }
 
 void inputCallback(u16 joy, u16 changed, u16 state)
@@ -351,19 +354,20 @@ void handleInput()
 void update()
 {
 
-    ship_pos_x += ship_speed_x;
-    if( ship_pos_x < FIX16(-24.0) ) {
-        ship_pos_x = FIX16(344.0);
-    } else if( ship_pos_x > FIX16(344.0) ) {
-        ship_pos_x = FIX16(-24.0);
+    ship_pos_x = ship_pos_x + ship_speed_x;
+    ship_pos_y = ship_pos_y + ship_speed_y;
+
+    if( ship_pos_x < FIX16(-6.0 - MAP_HALF_WIDTH ) ) {
+        ship_pos_x = FIX16(-6.0 - MAP_HALF_WIDTH);
+    } else if( ship_pos_x > FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 ) ) {
+        ship_pos_x = FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 );
     }
-    ship_pos_y += ship_speed_y;
-    if( ship_pos_y < FIX16(-24.0) ) {
-        ship_pos_y = FIX16(244.0);
-    } else if( ship_pos_y > FIX16(248.0) ) {
-        ship_pos_y = FIX16(-24.0);
+
+    if( ship_pos_y < FIX16(-6.0 - MAP_HALF_HEIGHT) ) {
+        ship_pos_y = FIX16(-6.0 - MAP_HALF_HEIGHT);
+    } else if( ship_pos_y > FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 ) ) {
+        ship_pos_y = FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 );
     }
-    SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
 
 
 /*
@@ -623,10 +627,12 @@ void update()
             }
         }
     }
+*/
 
     updateCameraPos();
-    SPR_setPosition(player.sprite, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY);
-*/
+    SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+
+    //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
 }
 
 static void checkCollisions()
@@ -989,20 +995,19 @@ int main(bool hard)
     VDP_loadTileSet(&plane_b_tileset, ind, DMA);
 
     // init background map
-    map_a = MAP_create(&plane_b_map, BG_A, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind));
-    camPosX = MAP_WIDTH / 2 - SCR_WIDTH / 2;
-    camPosY = MAP_HEIGHT / 2 - SCR_HEIGHT / 2;
-    MAP_scrollTo(map_a, camPosX, camPosY);
+    map_b = MAP_create(&plane_b_map, BG_B, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind));
+    camPosX = 0 - SCR_WIDTH / 2;
+    camPosY = 0 - SCR_HEIGHT / 2;
+    MAP_scrollTo(map_b, camPosX, camPosY);
 
+    /////////////////////////////////////////////////////////////////////////////////
     // Init sprite engine with defaults
     SPR_initEx(900);
-    ship_pos_x = FIX16(MAP_WIDTH / 2 - 8);
-    ship_pos_y = FIX16(MAP_HEIGHT / 2 - 8);
+    ship_pos_x = FIX16(- 12);
+    ship_pos_y = FIX16(- 12);
+    //ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
     ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
 
-    ship_pos_x = FIX16( MAP_WIDTH/2 - 8 );
-    ship_pos_y = FIX16( MAP_HEIGHT/2 - 8 );
-    ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x), fix16ToInt(ship_pos_y), TILE_ATTR(PAL0, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
 
     //player.hitbox_x1 = FIX16(3);
@@ -1024,8 +1029,50 @@ int main(bool hard)
 
     JOY_setEventHandler(&inputCallback);
 
-    while (TRUE)
-    {
+    char message[40];
+    while(TRUE)
+    {                                                                                                                        tick++; // increment for decision making
+
+        // read game pads and make initial calcs
+        handleInput();
+        // output calcs
+        char thrX[10];
+        fix16ToStr( thrustX[shipDir], thrX, 4 );
+        char thrY[10];
+        fix16ToStr( thrustY[shipDir], thrY, 4 );
+        sprintf( message, " shipDir: %d tx: %s ty %s ", shipDir, thrX, thrY   );
+        VDP_drawText(message, 1,1 );
+        char spdX[10];
+        fix16ToStr( ship_speed_x, spdX, 4 );
+        char spdY[10];
+        fix16ToStr( ship_speed_y, spdY, 4 );
+        sprintf( message, " sx: %s sy: %s ", spdX, spdY);
+        VDP_drawText(message, 1,2 );
+        char accX[10];
+        fix16ToStr( ship_accel_x, accX, 4 );
+        char accY[10];
+        fix16ToStr( ship_accel_y, accY, 4 );
+        sprintf( message, " ax: %s ay: %s ",  accX, accY);
+
+        VDP_drawText(message, 1,3 );
+        char maxX[10];
+        fix16ToStr( max_speed_x[shipDir], maxX, 4 );
+        char maxY[10];
+        fix16ToStr( max_speed_y[shipDir], maxY, 4 );
+        sprintf( message, " shipDir: %d mx: %s my %s ", shipDir, maxX, maxY   );
+        VDP_drawText(message, 1,4 );
+
+        char posX[10];
+        fix16ToStr( ship_pos_x, posX, 4 );
+        char posY[10];
+        fix16ToStr( ship_pos_y, posY, 4 );
+        sprintf( message, " px: %s py: %s ",  posX, posY);
+        VDP_drawText(message, 1,5 );
+
+        sprintf( message, " cam x: %d cam y: %d   ", camPosX, camPosY );
+        VDP_drawText(message, 1,6 );
+
+
         // read game pad 
         handleInput();
 
