@@ -16,7 +16,10 @@
 #define PLAYER_HEIGHT       24
 #define PLAYER_SHOT_WIDTH   8 
 #define PLAYER_SHOT_HEIGHT  8 
+#define SHOT_OFFSET_X       8 
+#define SHOT_OFFSET_Y       8 
 #define MAX_PLAYER_SHOTS    4
+#define PLAYER_SHOT_TIME    20
 
 
 
@@ -27,14 +30,6 @@
 // leave 8 of the objs for ufos and player shots
 #define MAX_ROCKS           37
 #define MAX_EXPLOSIONS      6
-Sprite *obj_sprites[MAX_OBJECTS];
-fix16 obj_speed_x[MAX_OBJECTS];
-fix16 obj_speed_y[MAX_OBJECTS];
-fix16 obj_pos_x[MAX_OBJECTS];
-fix16 obj_pos_y[MAX_OBJECTS];
-u8 obj_width[MAX_OBJECTS];
-u8 obj_hit_w[MAX_OBJECTS];
-bool obj_live[MAX_OBJECTS];
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -90,12 +85,16 @@ static u8 tick = 0; // just a commn tick for everyone to use
    CP_SPRITE xsRocks[MAX_XS_ROCKS];
    CP_SPRITE explosions[MAX_EXPLOSIONS];
    */
-#define MAX_OBJECTS 35
-Sprite *sprite[MAX_OBJECTS];
-fix16 speed_x[MAX_OBJECTS];
-fix16 speed_y[MAX_OBJECTS];
-fix16 pos_x[MAX_OBJECTS];
-fix16 pos_y[MAX_OBJECTS];
+
+Sprite *obj_sprites[MAX_OBJECTS];
+fix16 obj_speed_x[MAX_OBJECTS];
+fix16 obj_speed_y[MAX_OBJECTS];
+fix16 obj_pos_x[MAX_OBJECTS];
+fix16 obj_pos_y[MAX_OBJECTS];
+u8 obj_width[MAX_OBJECTS];
+u8 obj_hit_w[MAX_OBJECTS];
+s16 obj_ticks[MAX_OBJECTS];
+bool obj_live[MAX_OBJECTS];
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -144,6 +143,12 @@ void clear_objs() {
     memset( obj_pos_y, 0, sizeof( obj_pos_y ));
     memset( obj_width, 0, sizeof( obj_width ));
     memset( obj_hit_w, 0, sizeof( obj_hit_w ));
+
+    memset( obj_ticks, 0, sizeof( obj_ticks ));
+
+    for( u8 i=0; i < MAX_OBJECTS; ++i ) {
+        obj_live[i] = FALSE;
+    }
 }
 
 
@@ -244,24 +249,22 @@ void inputCallback(u16 joy, u16 changed, u16 state)
     // create a shot if available
     if (changed & state & BUTTON_A)
     {
-        for (u16 i = 0; i < MAX_PLAYER_SHOTS; ++i)
+        for (s16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
         {
-/*
-            if (playerShots[i].active == FALSE)
+
+            if (obj_live[i] == FALSE)
             {
                 // create a new one
                 XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
 
-                u16 rot = fix16ToInt(playerRotation);
-                playerShots[i].pos_x = (ship_pos_x+ FIX16((PLAYER_WIDTH - PLAYER_SHOT_WIDTH) / 2)) + fix16Mul(deltaX[rot], FIX16(2.0));
-                playerShots[i].pos_y = (ship_pos_y+ FIX16((PLAYER_HEIGHT - PLAYER_SHOT_WIDTH) / 2)) + fix16Mul(deltaY[rot], FIX16(2.0));
-                playerShots[i].vel_x = fix16Mul(deltaX[rot], FIX16(2.0));
-                playerShots[i].vel_y = fix16Mul(deltaY[rot], FIX16(2.0));
-                playerShots[i].active = TRUE;
-                playerShots[i].ticks = 0;
+                obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
+                obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
+                obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 3 );
+                obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 3 );
+                obj_live[i] = TRUE;
+                obj_ticks[i] = 0; // you do need this.
                 break;
             }
-*/
         }
     }
 }
@@ -270,7 +273,7 @@ void handleInput()
 {
 
     u16 value = JOY_readJoypad(JOY_1);
-
+    // check rotation every frame.
     if (value & BUTTON_LEFT)
     {
         shipDir -=angleStep;
@@ -373,6 +376,7 @@ void handleInput()
 void update()
 {
 
+    // do ship
     ship_pos_x = ship_pos_x + ship_speed_x;
     ship_pos_y = ship_pos_y + ship_speed_y;
 
@@ -389,37 +393,20 @@ void update()
     }
 
 
-/*
-    // shots
-    for (u16 i = 0; i < MAX_PLAYER_SHOTS; ++i)
+    for (u16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
     {
-        if (playerShots[i].active == TRUE)
+        if (obj_live[i] == TRUE)
         {
-            playerShots[i].pos_x += playerShots[i].vel_x;
-            playerShots[i].pos_y += playerShots[i].vel_y;
-            s16 x = fix16ToInt(playerShots[i].pos_x) - camPosX;
-            s16 y = fix16ToInt(playerShots[i].pos_y) - camPosY;
-            if (x >= 0 && x < SCR_WIDTH && y >= 0 && y < SCR_HEIGHT)
+            obj_ticks[i] += 1;
+            if (obj_ticks[i] > PLAYER_SHOT_TIME )
             {
-                SPR_setVisibility(playerShots[i].sprite, VISIBLE);
-                SPR_setPosition(playerShots[i].sprite, fix16ToInt(playerShots[i].pos_x) - camPosX, fix16ToInt(playerShots[i].pos_y) - camPosY);
+                obj_live[i] = FALSE;
             }
-            else
-            {
-                playerShots[i].active = FALSE;
-                SPR_setVisibility(playerShots[i].sprite, HIDDEN);
-            }
-        }
-        else
-        {
-            SPR_setVisibility(playerShots[i].sprite, HIDDEN);
         }
     }
-*/
 
 
-    // COPY PASTE IS THE WORST FORM OF REUSE:   MOVE TO A GENERIC GameEntity struct next
-    for (u16 i = 0; i < MAX_ROCKS; ++i)
+    for (u16 i = 0; i < MAX_OBJECTS; ++i)
     {
         if (obj_live[i] == TRUE)
         {
@@ -754,26 +741,27 @@ static void checkCollisions()
 
 void createPlayerShots()
 {
-/*
     fix16 xpos = FIX16(-16);
     fix16 ypos = FIX16(-16);
 
-    for (u16 i = 0; i < MAX_PLAYER_SHOTS; ++i)
+    for (u16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
     {
-        playerShots[i].pos_x = xpos;
-        playerShots[i].pos_y = ypos;
-        playerShots[i].vel_x = FIX16(0.0);
-        playerShots[i].vel_y = FIX16(0.0);
-        playerShots[i].active = FALSE;
+
+        obj_pos_x[i] = xpos;
+        obj_pos_y[i] = ypos;
+        obj_speed_x[i] = FIX16(0.0); 
+        obj_speed_y[i] = FIX16(0.0); 
+        obj_live[i] = FALSE;
+        obj_ticks[i] = 0;
+/*
         playerShots[i].hitbox_x1 = FIX16(3);
         playerShots[i].hitbox_y1 = FIX16(3);
         playerShots[i].hitbox_x2 = FIX16(4);
         playerShots[i].hitbox_y2 = FIX16(4);
-
-        playerShots[i].sprite = SPR_addSprite(&shot, xpos, ypos, TILE_ATTR(PAL0, 0, FALSE, FALSE));
-        SPR_setAnim(playerShots[i].sprite, 2);
-    }
 */
+        obj_sprites[i] = SPR_addSprite(&shot, xpos, ypos, TILE_ATTR(PAL0, 0, FALSE, FALSE));
+        SPR_setAnim(obj_sprites[i],2);
+    }
 }
 
 void createRocks()
@@ -789,24 +777,7 @@ void createRocks()
         obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
         obj_live[i] = TRUE;
         obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-        SPR_setAnim(obj_sprites[i],0);// i % 4);
-/*
-        obj_pos_x = FIX16(random() % (MAP_WIDTH - 32) + i);
-        obj_pos_y = FIX16(random() % (MAP_HEIGHT - 32) + i);
-        u16 rot = random() % 16;
-        fix16 vel = FIX16(0.3);
-        rocks[i].vel_x = fix16Mul(vel, deltaX[rot]);
-        rocks[i].vel_y = fix16Mul(vel, deltaY[rot]);
-        rocks[i].active = TRUE;
-        rocks[i].hitbox_x1 = FIX16(2);
-        rocks[i].hitbox_y1 = FIX16(2);
-        rocks[i].hitbox_x2 = FIX16(30);
-        rocks[i].hitbox_y2 = FIX16(30);
-        rocks[i].hitpoints = 3;
-
-        rocks[i].sprite = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-        SPR_setAnim(rocks[i].sprite, i % 4);
-*/
+        SPR_setAnim(obj_sprites[i], i % 4);
 
     }
 
@@ -929,7 +900,7 @@ int main(bool hard)
    
 
 
-    //createPlayerShots();
+    createPlayerShots();
     //createExplosions();
     createRocks();
     //createEnemies();
@@ -978,6 +949,15 @@ int main(bool hard)
 
         sprintf( message, " cam x: %d cam y: %d   ", camPosX, camPosY );
         VDP_drawText(message, 1,6 );
+
+
+        char shtX[10];
+        fix16ToStr( obj_pos_x[MAX_OBJECTS-MAX_PLAYER_SHOTS], shtX, 4 );
+        char shtY[10];
+        fix16ToStr( obj_pos_y[MAX_OBJECTS-MAX_PLAYER_SHOTS], shtY, 4 );
+        sprintf( message, "SHOT x: %s y: %s t: %d ",  shtX, shtY, obj_ticks[MAX_OBJECTS-MAX_PLAYER_SHOTS]);
+        VDP_drawText(message, 1,7 );
+
 
 
         // read game pad 
