@@ -23,8 +23,19 @@
 /////////////////////////////////////////////////////////////////////////////////
 // Define enemy constants
 
-#define MAX_OBJS            65
+#define MAX_OBJECTS         45
+// leave 8 of the objs for ufos and player shots
+#define MAX_ROCKS           37
 #define MAX_EXPLOSIONS      6
+Sprite *obj_sprites[MAX_OBJECTS];
+fix16 obj_speed_x[MAX_OBJECTS];
+fix16 obj_speed_y[MAX_OBJECTS];
+fix16 obj_pos_x[MAX_OBJECTS];
+fix16 obj_pos_y[MAX_OBJECTS];
+u8 obj_width[MAX_OBJECTS];
+u8 obj_hit_w[MAX_OBJECTS];
+bool obj_live[MAX_OBJECTS];
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // Define map/world constants
@@ -125,7 +136,15 @@ const s16 playfield_height = 224;
 
 
 
-
+void clear_objs() {
+    memset( obj_sprites, 0, sizeof( obj_sprites ));
+    memset( obj_speed_x, 0, sizeof( obj_speed_x ));
+    memset( obj_speed_y, 0, sizeof( obj_speed_y ));
+    memset( obj_pos_x, 0, sizeof( obj_pos_x ));
+    memset( obj_pos_y, 0, sizeof( obj_pos_y ));
+    memset( obj_width, 0, sizeof( obj_width ));
+    memset( obj_hit_w, 0, sizeof( obj_hit_w ));
+}
 
 
 
@@ -396,176 +415,54 @@ void update()
             SPR_setVisibility(playerShots[i].sprite, HIDDEN);
         }
     }
+*/
+
 
     // COPY PASTE IS THE WORST FORM OF REUSE:   MOVE TO A GENERIC GameEntity struct next
     for (u16 i = 0; i < MAX_ROCKS; ++i)
     {
-        if (rocks[i].active == TRUE)
+        if (obj_live[i] == TRUE)
         {
-            rocks[i].pos_x += rocks[i].vel_x;
-            if (rocks[i].pos_x < FIX16(-32))
+            obj_pos_x[i] += obj_speed_x[i];
+            if (obj_pos_x[i] < FIX16(-32-MAP_HALF_WIDTH))
             {
-                rocks[i].pos_x = FIX16(MAP_WIDTH);
+                obj_pos_x[i] = FIX16(MAP_HALF_WIDTH);
             }
-            else if (rocks[i].pos_x > FIX16(MAP_WIDTH))
+            else if (obj_pos_x[i] > FIX16(MAP_HALF_WIDTH))
             {
-                rocks[i].pos_x = FIX16(-32);
-            }
-
-            rocks[i].pos_y += rocks[i].vel_y;
-            if (rocks[i].pos_y < FIX16(-32))
-            {
-                rocks[i].pos_y = FIX16(MAP_HEIGHT);
-            }
-            else if (rocks[i].pos_y > FIX16(MAP_HEIGHT))
-            {
-                rocks[i].pos_y = FIX16(-32);
+                obj_pos_x[i] = FIX16(-32-MAP_HALF_WIDTH);
             }
 
-            s16 x = fix16ToInt(rocks[i].pos_x) - camPosX;
-            s16 y = fix16ToInt(rocks[i].pos_y) - camPosY;
+            obj_pos_y[i] += obj_speed_y[i];
+            if (obj_pos_y[i] < FIX16(-32-MAP_HALF_HEIGHT))
+            {
+                obj_pos_y[i] = FIX16(MAP_HALF_HEIGHT);
+            }
+            else if (obj_pos_y[i] > FIX16(MAP_HALF_HEIGHT))
+            {
+                obj_pos_y[i] = FIX16(-32-MAP_HALF_HEIGHT);
+            }
+
+            s16 x = fix16ToInt(obj_pos_x[i]) - camPosX + MAP_HALF_WIDTH;
+            s16 y = fix16ToInt(obj_pos_y[i]) - camPosY + MAP_HALF_HEIGHT;
             if (x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT)
             {
-                SPR_setVisibility(rocks[i].sprite, VISIBLE);
-                SPR_setPosition(rocks[i].sprite, fix16ToInt(rocks[i].pos_x) - camPosX, fix16ToInt(rocks[i].pos_y) - camPosY);
+                SPR_setVisibility(obj_sprites[i], VISIBLE);
+                SPR_setPosition(obj_sprites[i], x, y );
             }
             else
             {
-                SPR_setVisibility(rocks[i].sprite, HIDDEN);
+                SPR_setVisibility(obj_sprites[i], HIDDEN);
             }
         }
         else
         {
-            SPR_setVisibility(rocks[i].sprite, HIDDEN);
+            SPR_setVisibility(obj_sprites[i], HIDDEN);
         }
     }
 
-    for (u16 i = 0; i < MAX_ROCKS; ++i)
-    {
-        if (midRocks[i].active == TRUE)
-        {
-            midRocks[i].pos_x += midRocks[i].vel_x;
-            if (midRocks[i].pos_x < FIX16(-32))
-            {
-                midRocks[i].pos_x = FIX16(MAP_WIDTH);
-            }
-            else if (midRocks[i].pos_x > FIX16(MAP_WIDTH))
-            {
-                midRocks[i].pos_x = FIX16(-32);
-            }
 
-            midRocks[i].pos_y += midRocks[i].vel_y;
-            if (midRocks[i].pos_y < FIX16(-32))
-            {
-                midRocks[i].pos_y = FIX16(MAP_HEIGHT);
-            }
-            else if (midRocks[i].pos_y > FIX16(MAP_HEIGHT))
-            {
-                midRocks[i].pos_y = FIX16(-32);
-            }
-
-            s16 x = fix16ToInt(midRocks[i].pos_x) - camPosX;
-            s16 y = fix16ToInt(midRocks[i].pos_y) - camPosY;
-            if (x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT)
-            {
-                SPR_setVisibility(midRocks[i].sprite, VISIBLE);
-                SPR_setPosition(midRocks[i].sprite, fix16ToInt(midRocks[i].pos_x) - camPosX, fix16ToInt(midRocks[i].pos_y) - camPosY);
-            }
-            else
-            {
-                SPR_setVisibility(midRocks[i].sprite, HIDDEN);
-            }
-        }
-        else
-        {
-            SPR_setVisibility(midRocks[i].sprite, HIDDEN);
-        }
-    }
-
-    for (u16 i = 0; i < MAX_SMALL_ROCKS; ++i)
-    {
-        if (smallRocks[i].active == TRUE)
-        {
-            smallRocks[i].pos_x += smallRocks[i].vel_x;
-            if (smallRocks[i].pos_x < FIX16(-32))
-            {
-                smallRocks[i].pos_x = FIX16(MAP_WIDTH);
-            }
-            else if (smallRocks[i].pos_x > FIX16(MAP_WIDTH))
-            {
-                smallRocks[i].pos_x = FIX16(-32);
-            }
-
-            smallRocks[i].pos_y += smallRocks[i].vel_y;
-            if (smallRocks[i].pos_y < FIX16(-32))
-            {
-                smallRocks[i].pos_y = FIX16(MAP_HEIGHT);
-            }
-            else if (smallRocks[i].pos_y > FIX16(MAP_HEIGHT))
-            {
-                smallRocks[i].pos_y = FIX16(-32);
-            }
-
-            s16 x = fix16ToInt(smallRocks[i].pos_x) - camPosX;
-            s16 y = fix16ToInt(smallRocks[i].pos_y) - camPosY;
-            if (x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT)
-            {
-                SPR_setVisibility(smallRocks[i].sprite, VISIBLE);
-                SPR_setPosition(smallRocks[i].sprite, fix16ToInt(smallRocks[i].pos_x) - camPosX, fix16ToInt(smallRocks[i].pos_y) - camPosY);
-            }
-            else
-            {
-                SPR_setVisibility(smallRocks[i].sprite, HIDDEN);
-            }
-        }
-        else
-        {
-            SPR_setVisibility(smallRocks[i].sprite, HIDDEN);
-        }
-    }
-
-    for (u16 i = 0; i < MAX_SMALL_ROCKS; ++i)
-    {
-        if (xsRocks[i].active == TRUE)
-        {
-            xsRocks[i].pos_x += xsRocks[i].vel_x;
-            if (xsRocks[i].pos_x < FIX16(-32))
-            {
-                xsRocks[i].pos_x = FIX16(MAP_WIDTH);
-            }
-            else if (xsRocks[i].pos_x > FIX16(MAP_WIDTH))
-            {
-                xsRocks[i].pos_x = FIX16(-32);
-            }
-
-            xsRocks[i].pos_y += xsRocks[i].vel_y;
-            if (xsRocks[i].pos_y < FIX16(-32))
-            {
-                xsRocks[i].pos_y = FIX16(MAP_HEIGHT);
-            }
-            else if (xsRocks[i].pos_y > FIX16(MAP_HEIGHT))
-            {
-                xsRocks[i].pos_y = FIX16(-32);
-            }
-
-            s16 x = fix16ToInt(xsRocks[i].pos_x) - camPosX;
-            s16 y = fix16ToInt(xsRocks[i].pos_y) - camPosY;
-            if (x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT)
-            {
-                SPR_setVisibility(xsRocks[i].sprite, VISIBLE);
-                SPR_setPosition(xsRocks[i].sprite, fix16ToInt(xsRocks[i].pos_x) - camPosX, fix16ToInt(xsRocks[i].pos_y) - camPosY);
-            }
-            else
-            {
-                SPR_setVisibility(xsRocks[i].sprite, HIDDEN);
-            }
-        }
-        else
-        {
-            SPR_setVisibility(xsRocks[i].sprite, HIDDEN);
-        }
-    }
-
+/*
     // UFO physics
     for (u16 i = 0; i < MAX_ENEMIES; ++i)
     {
@@ -686,17 +583,17 @@ static void checkCollisions()
         if (rocks[i].active == TRUE)
         {
             // check if ship has hit
-            if ((rocks[i].pos_x + rocks[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
-                    (rocks[i].pos_x + rocks[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
-                    (rocks[i].pos_y + rocks[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
-                    (rocks[i].pos_y + rocks[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
+            if ((obj_pos_x + rocks[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
+                    (obj_pos_x + rocks[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
+                    (obj_pos_y + rocks[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
+                    (obj_pos_y + rocks[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
             {
                 rocks[i].hitpoints -= 1;
                 if (rocks[i].hitpoints == 0)
                 {
                     rocks[i].active = FALSE;
                     SPR_setVisibility(rocks[i].sprite, HIDDEN);
-                    addExplosion(rocks[i].pos_x, rocks[i].pos_y);
+                    addExplosion(obj_pos_x, obj_pos_y);
                 }
                 // SPR_setVisibility( player.sprite, HIDDEN );
             }
@@ -705,10 +602,10 @@ static void checkCollisions()
             {
                 if (
                         playerShots[j].active == TRUE &&
-                        (rocks[i].pos_x + rocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
-                        (rocks[i].pos_x + rocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
-                        (rocks[i].pos_y + rocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
-                        (rocks[i].pos_y + rocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
+                        (obj_pos_x + rocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
+                        (obj_pos_x + rocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
+                        (obj_pos_y + rocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
+                        (obj_pos_y + rocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
                 {
                     rocks[i].hitpoints -= 1;
                     if (rocks[i].hitpoints == 0)
@@ -718,7 +615,7 @@ static void checkCollisions()
                     }
                     playerShots[j].active = FALSE;
                     SPR_setVisibility(playerShots[j].sprite, HIDDEN);
-                    addExplosion(rocks[i].pos_x, rocks[i].pos_y);
+                    addExplosion(obj_pos_x, obj_pos_y);
                 }
             }
         }
@@ -881,11 +778,21 @@ void createPlayerShots()
 
 void createRocks()
 {
-/*
+
     for (u16 i = 0; i < MAX_ROCKS; ++i)
     {
-        rocks[i].pos_x = FIX16(random() % (MAP_WIDTH - 32) + i);
-        rocks[i].pos_y = FIX16(random() % (MAP_HEIGHT - 32) + i);
+        obj_pos_x[i] = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
+        obj_pos_y[i] = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
+        u8 rot = random();
+        fix16 vel = FIX16(1.0);
+        obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
+        obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
+        obj_live[i] = TRUE;
+        obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+        SPR_setAnim(obj_sprites[i],0);// i % 4);
+/*
+        obj_pos_x = FIX16(random() % (MAP_WIDTH - 32) + i);
+        obj_pos_y = FIX16(random() % (MAP_HEIGHT - 32) + i);
         u16 rot = random() % 16;
         fix16 vel = FIX16(0.3);
         rocks[i].vel_x = fix16Mul(vel, deltaX[rot]);
@@ -899,8 +806,10 @@ void createRocks()
 
         rocks[i].sprite = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
         SPR_setAnim(rocks[i].sprite, i % 4);
-    }
 */
+
+    }
+
 }
 
 void createEnemies()
@@ -956,6 +865,7 @@ static void createExplosions()
 
 int main(bool hard)
 {
+    clear_objs();
     /////////////////////////////////////////////////////////////////////////////////
     // Setup Thrust Table
     u16 pos = 0;
@@ -1021,10 +931,7 @@ int main(bool hard)
 
     //createPlayerShots();
     //createExplosions();
-    //createRocks();
-    //createMidRocks();
-    //createSmallRocks();
-    //createExtraSmallRocks();
+    createRocks();
     //createEnemies();
 
     JOY_setEventHandler(&inputCallback);
