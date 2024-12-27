@@ -19,8 +19,7 @@
 #define SHOT_OFFSET_X       8 
 #define SHOT_OFFSET_Y       8 
 #define MAX_PLAYER_SHOTS    4
-#define PLAYER_SHOT_TIME    24
-
+#define PLAYER_SHOT_TIME    42  
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -36,8 +35,7 @@
 // Define map/world constants
 #define MAP_WIDTH           640
 #define MAP_HEIGHT          640
-// remember fix16 is -512 to 511
-
+// remember fix16 is -512 to 511 so using 640 requires shifting the origin a bit
 #define MAP_HALF_WIDTH     320 
 #define MAP_HALF_HEIGHT    320
 
@@ -54,38 +52,9 @@ s16 camPosX; // relative to total world map
 s16 camPosY; // relative to total world map
 
 static u8 tick = 0; // just a commn tick for everyone to use
-/*
-   typedef struct
-   {
-   Sprite *sprite;
-   fix16 pos_x;
-   fix16 pos_y;
-   fix16 vel_x;
-   fix16 vel_y;
-
-   s16 hitbox_x1;
-   s16 hitbox_y1;
-   s16 hitbox_x2;
-   s16 hitbox_y2;
-
-   bool active;
-   u16 ticks;
-   u16 hitpoints;
-   } CP_SPRITE;
-   */
 
 /////////////////////////////////////////////////////////////////////////////////
 // Moving Objs variables
-/*
-   CP_SPRITE enemies[MAX_ENEMIES];
-   CP_SPRITE enemyShots[MAX_ENEMY_SHOTS];
-   CP_SPRITE rocks[MAX_ROCKS];
-   CP_SPRITE midRocks[MAX_MID_ROCKS];
-   CP_SPRITE smallRocks[MAX_SMALL_ROCKS];
-   CP_SPRITE xsRocks[MAX_XS_ROCKS];
-   CP_SPRITE explosions[MAX_EXPLOSIONS];
-   */
-
 Sprite *obj_sprites[MAX_OBJECTS];
 fix16 obj_speed_x[MAX_OBJECTS];
 fix16 obj_speed_y[MAX_OBJECTS];
@@ -99,16 +68,7 @@ bool obj_live[MAX_OBJECTS];
 
 /////////////////////////////////////////////////////////////////////////////////
 // player variables
-/*
-   CP_SPRITE player;
-   fix16 playerRotation;
-   bool doPlayerUpdate;
-   fix16 acc = FIX16(0.10);
-   u8 doDec = 0;
-   fix16 deltaX[PLAYER_FRAME_COUNT];
-   fix16 deltaY[PLAYER_FRAME_COUNT];
-   CP_SPRITE playerShots[MAX_PLAYER_SHOTS];
-   */
+
 
 // Asteroids used 8-bits for angles  0 though 255
 // I have fewer sprite frames than 256, but can reuse frames for similar angles.
@@ -117,7 +77,6 @@ fix16 thrustY[256];
 u8 shipDir = 0; // 0 is up
 const u8 angleStep = 3; // turn rate.
 
-// Just trying continuous memory instead of an array of structs in original implementation.
 
 Sprite *ship_sprite;
 fix16 ship_accel_x = FIX16(0.0);
@@ -131,7 +90,6 @@ fix16 max_speed_x[256];
 fix16 max_speed_y[256];
 const s16 playfield_width = 320;
 const s16 playfield_height = 224;
-
 
 
 
@@ -259,8 +217,8 @@ void inputCallback(u16 joy, u16 changed, u16 state)
 
                 obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
                 obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
-                obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 5 );
-                obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 5 );
+                obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 4 );
+                obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 4 );
                 obj_live[i] = TRUE;
                 obj_ticks[i] = 0; // you do need this.
                 break;
@@ -534,6 +492,7 @@ void update()
 
 static void checkCollisions()
 {
+
 /*
     for (u16 i = 0; i < MAX_ENEMIES; ++i)
     {
@@ -620,136 +579,9 @@ static void checkCollisions()
             }
         }
     }
-
-    for (u16 i = 0; i < MAX_ROCKS; ++i)
-    {
-        if (midRocks[i].active == TRUE)
-        {
-            // check if ship has hit
-            if ((midRocks[i].pos_x + midRocks[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
-                    (midRocks[i].pos_x + midRocks[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
-                    (midRocks[i].pos_y + midRocks[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
-                    (midRocks[i].pos_y + midRocks[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
-            {
-                midRocks[i].hitpoints -= 1;
-                if (midRocks[i].hitpoints == 0)
-                {
-                    midRocks[i].active = FALSE;
-                    SPR_setVisibility(midRocks[i].sprite, HIDDEN);
-                    addExplosion(midRocks[i].pos_x, midRocks[i].pos_y);
-                }
-                // SPR_setVisibility( player.sprite, HIDDEN );
-            }
-
-            for (u16 j = 0; j < MAX_PLAYER_SHOTS; ++j)
-            {
-                if (
-                        playerShots[j].active == TRUE &&
-                        (midRocks[i].pos_x + midRocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
-                        (midRocks[i].pos_x + midRocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
-                        (midRocks[i].pos_y + midRocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
-                        (midRocks[i].pos_y + midRocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
-                {
-                    midRocks[i].hitpoints -= 1;
-                    if (midRocks[i].hitpoints == 0)
-                    {
-                        midRocks[i].active = FALSE;
-                        SPR_setVisibility(midRocks[i].sprite, HIDDEN);
-                    }
-                    playerShots[j].active = FALSE;
-                    SPR_setVisibility(playerShots[j].sprite, HIDDEN);
-                    addExplosion(midRocks[i].pos_x, midRocks[i].pos_y);
-                }
-            }
-        }
-    }
-
-    for (u16 i = 0; i < MAX_SMALL_ROCKS; ++i)
-    {
-        if (smallRocks[i].active == TRUE)
-        {
-            // check if ship has hit
-            if ((smallRocks[i].pos_x + smallRocks[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
-                    (smallRocks[i].pos_x + smallRocks[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
-                    (smallRocks[i].pos_y + smallRocks[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
-                    (smallRocks[i].pos_y + smallRocks[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
-            {
-                smallRocks[i].hitpoints -= 1;
-                if (smallRocks[i].hitpoints == 0)
-                {
-                    smallRocks[i].active = FALSE;
-                    SPR_setVisibility(smallRocks[i].sprite, HIDDEN);
-                    addExplosion(smallRocks[i].pos_x, smallRocks[i].pos_y);
-                }
-                // SPR_setVisibility( player.sprite, HIDDEN );
-            }
-
-            for (u16 j = 0; j < MAX_PLAYER_SHOTS; ++j)
-            {
-                if (
-                        playerShots[j].active == TRUE &&
-                        (smallRocks[i].pos_x + smallRocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
-                        (smallRocks[i].pos_x + smallRocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
-                        (smallRocks[i].pos_y + smallRocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
-                        (smallRocks[i].pos_y + smallRocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
-                {
-                    smallRocks[i].hitpoints -= 1;
-                    if (smallRocks[i].hitpoints == 0)
-                    {
-                        smallRocks[i].active = FALSE;
-                        SPR_setVisibility(smallRocks[i].sprite, HIDDEN);
-                    }
-                    playerShots[j].active = FALSE;
-                    SPR_setVisibility(playerShots[j].sprite, HIDDEN);
-                    addExplosion(smallRocks[i].pos_x, smallRocks[i].pos_y);
-                }
-            }
-        }
-    }
-
-    for (u16 i = 0; i < MAX_SMALL_ROCKS; ++i)
-    {
-        if (xsRocks[i].active == TRUE)
-        {
-            // check if ship has hit
-            if ((xsRocks[i].pos_x + xsRocks[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
-                    (xsRocks[i].pos_x + xsRocks[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
-                    (xsRocks[i].pos_y + xsRocks[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
-                    (xsRocks[i].pos_y + xsRocks[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
-            {
-                xsRocks[i].hitpoints -= 1;
-                if (xsRocks[i].hitpoints == 0)
-                {
-                    xsRocks[i].active = FALSE;
-                    SPR_setVisibility(xsRocks[i].sprite, HIDDEN);
-                    addExplosion(xsRocks[i].pos_x, xsRocks[i].pos_y);
-                }
-                // SPR_setVisibility( player.sprite, HIDDEN );
-            }
-
-            for (u16 j = 0; j < MAX_PLAYER_SHOTS; ++j)
-            {
-                if (
-                        playerShots[j].active == TRUE &&
-                        (xsRocks[i].pos_x + xsRocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
-                        (xsRocks[i].pos_x + xsRocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
-                        (xsRocks[i].pos_y + xsRocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
-                        (xsRocks[i].pos_y + xsRocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
-                {
-                    xsRocks[i].hitpoints -= 1;
-                    if (xsRocks[i].hitpoints == 0)
-                    {
-                        xsRocks[i].active = FALSE;
-                        SPR_setVisibility(xsRocks[i].sprite, HIDDEN);
-                    }
-                    playerShots[j].active = FALSE;
-                    SPR_setVisibility(playerShots[j].sprite, HIDDEN);
-                    addExplosion(xsRocks[i].pos_x, xsRocks[i].pos_y);
-                }
-            }
-        }
-    }
 */
+
+
 }
 
 void createPlayerShots()
@@ -926,10 +758,12 @@ int main(bool hard)
 
     char message[40];
     while(TRUE)
-    {                                                                                                                        tick++; // increment for decision making
+    {
+        tick++; // increment for decision making
 
         // read game pads and make initial calcs
         handleInput();
+/*
         // output calcs
         char thrX[10];
         fix16ToStr( thrustX[shipDir], thrX, 4 );
@@ -974,19 +808,17 @@ int main(bool hard)
         fix16ToStr( obj_pos_y[MAX_OBJECTS-MAX_PLAYER_SHOTS], shtY, 4 );
         sprintf( message, "SHOT x: %s y: %s t: %d ",  shtX, shtY, obj_ticks[MAX_OBJECTS-MAX_PLAYER_SHOTS]);
         VDP_drawText(message, 1,7 );
+*/
 
 
-
-        // read game pad 
-        handleInput();
 
         // move sprites
         update();
 
-       // checkCollisions();
+        checkCollisions();
 
+        // SGDK stuff.
         SPR_update();
-
         SYS_doVBlankProcess();
     }
     return 0;
