@@ -61,7 +61,7 @@ fix16 obj_speed_y[MAX_OBJECTS];
 fix16 obj_pos_x[MAX_OBJECTS];
 fix16 obj_pos_y[MAX_OBJECTS];
 u8 obj_width[MAX_OBJECTS];
-u8 obj_hit_w[MAX_OBJECTS];
+fix16 obj_hit_w[MAX_OBJECTS];
 s16 obj_ticks[MAX_OBJECTS];
 bool obj_live[MAX_OBJECTS];
 
@@ -347,7 +347,7 @@ void handleInput()
 void update()
 {
 
-    // do ship
+    // update the player
     ship_pos_x = ship_pos_x + ship_speed_x;
     ship_pos_y = ship_pos_y + ship_speed_y;
 
@@ -364,6 +364,7 @@ void update()
     }
 
 
+    // deactiveate shots if they've been around too long.
     for (u16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
     {
         if (obj_live[i] == TRUE)
@@ -376,7 +377,7 @@ void update()
         }
     }
 
-
+    // update non-players objects.
     for (u16 i = 0; i < MAX_OBJECTS; ++i)
     {
         if (obj_live[i] == TRUE)
@@ -421,49 +422,6 @@ void update()
 
 
 /*
-    // UFO physics
-    for (u16 i = 0; i < MAX_ENEMIES; ++i)
-    {
-        if (enemies[i].active == TRUE)
-        {
-            enemies[i].pos_x += enemies[i].vel_x;
-            if (enemies[i].pos_x < FIX16(-32))
-            {
-                enemies[i].pos_x = FIX16(MAP_WIDTH);
-            }
-            else if (enemies[i].pos_x > FIX16(MAP_WIDTH))
-            {
-                enemies[i].pos_x = FIX16(-32);
-            }
-
-            enemies[i].pos_y += enemies[i].vel_y;
-            if (enemies[i].pos_y < FIX16(-32))
-            {
-                enemies[i].pos_y = FIX16(MAP_HEIGHT);
-            }
-            else if (enemies[i].pos_y > FIX16(MAP_HEIGHT))
-            {
-                enemies[i].pos_y = FIX16(-32);
-            }
-
-            s16 x = fix16ToInt(enemies[i].pos_x) - camPosX;
-            s16 y = fix16ToInt(enemies[i].pos_y) - camPosY;
-            if (x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT)
-            {
-                SPR_setVisibility(enemies[i].sprite, VISIBLE);
-                SPR_setPosition(enemies[i].sprite, fix16ToInt(enemies[i].pos_x) - camPosX, fix16ToInt(enemies[i].pos_y) - camPosY);
-            }
-            else
-            {
-                SPR_setVisibility(enemies[i].sprite, HIDDEN);
-            }
-        }
-        else
-        {
-            SPR_setVisibility(enemies[i].sprite, HIDDEN);
-        }
-    }
-
     for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
     {
         if (explosions[i].active == TRUE)
@@ -536,53 +494,69 @@ static void checkCollisions()
             }
         }
     }
+*/
 
-    for (u16 i = 0; i < MAX_ROCKS; ++i)
+
+    for (u16 i = 0; i < MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
     {
-        if (rocks[i].active == TRUE)
+        if (obj_live[i] == TRUE)
         {
+/*
             // check if ship has hit
-            if ((obj_pos_x + rocks[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
-                    (obj_pos_x + rocks[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
-                    (obj_pos_y + rocks[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
-                    (obj_pos_y + rocks[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
+            if ((obj_pos_x[i] + FIX16(2)) < (ship_pos_x + FIX16(3) ) &&
+                (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(21) )  &&
+                (obj_pos_y[i] + FIX16(2)) < (ship_pos_y + FIX16(3) ) &&
+                (obj_pos_y[i] + obj_hit_w[i]) > (ship_pos_y + FIX16(21) ))
             {
-                rocks[i].hitpoints -= 1;
-                if (rocks[i].hitpoints == 0)
-                {
-                    rocks[i].active = FALSE;
-                    SPR_setVisibility(rocks[i].sprite, HIDDEN);
-                    addExplosion(obj_pos_x, obj_pos_y);
-                }
-                // SPR_setVisibility( player.sprite, HIDDEN );
-            }
+                obj_live[i] = FALSE;
+                SPR_setVisibility(obj_sprites[i], HIDDEN);
 
-            for (u16 j = 0; j < MAX_PLAYER_SHOTS; ++j)
+                addExplosion(obj_pos_x[i], obj_pos_y[i]);
+            }
+*/
+            for (u8 j = MAX_OBJECTS - MAX_PLAYER_SHOTS; j < MAX_OBJECTS; ++j)
             {
-                if (
-                        playerShots[j].active == TRUE &&
-                        (obj_pos_x + rocks[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
-                        (obj_pos_x + rocks[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
-                        (obj_pos_y + rocks[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
-                        (obj_pos_y + rocks[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
+
+/*
+        char message[40];
+        sprintf( message, "  check i: %d j: %d  ", i, j   );
+        VDP_drawText(message, 1,1 );
+        char objX[10];
+        fix16ToStr( obj_pos_x[i], objX, 4 );
+        char objY[10];
+        fix16ToStr( obj_pos_y[i], objY, 4 );
+        sprintf( message, "obj x: %s y: %s ", objX, objY);
+        VDP_drawText(message, 1,2 );
+
+        fix16ToStr( obj_pos_x[j], objX, 4 );
+        fix16ToStr( obj_pos_y[j], objY, 4 );
+        sprintf( message, "shot x: %s y: %s ", objX, objY);
+        VDP_drawText(message, 1,3 );
+*/
+
+                if ( obj_live[j] == TRUE &&
+                     (obj_pos_x[i] + FIX16(2))     < (obj_pos_x[j] + FIX16(4)) &&
+                     (obj_pos_x[i] + obj_hit_w[i]) > (obj_pos_x[j] + FIX16(4)) &&
+                     (obj_pos_y[i] + FIX16(2))     < (obj_pos_y[j] + FIX16(4)) &&
+                     (obj_pos_y[i] + obj_hit_w[i]) > (obj_pos_y[j] + FIX16(4)))
                 {
-                    rocks[i].hitpoints -= 1;
-                    if (rocks[i].hitpoints == 0)
-                    {
-                        rocks[i].active = FALSE;
-                        SPR_setVisibility(rocks[i].sprite, HIDDEN);
-                    }
-                    playerShots[j].active = FALSE;
-                    SPR_setVisibility(playerShots[j].sprite, HIDDEN);
-                    addExplosion(obj_pos_x, obj_pos_y);
+
+
+
+                    obj_live[i] = FALSE;
+                    SPR_setVisibility(obj_sprites[i], HIDDEN);
+                    obj_live[j] = FALSE;
+                    SPR_setVisibility(obj_sprites[j], HIDDEN);
+
+                    XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
+                    addExplosion(obj_pos_x[i], obj_pos_y[i]);
                 }
             }
         }
     }
-*/
-
 
 }
+
 
 void createPlayerShots()
 {
@@ -598,31 +572,43 @@ void createPlayerShots()
         obj_speed_y[i] = FIX16(0.0); 
         obj_live[i] = FALSE;
         obj_ticks[i] = 0;
-/*
-        playerShots[i].hitbox_x1 = FIX16(3);
-        playerShots[i].hitbox_y1 = FIX16(3);
-        playerShots[i].hitbox_x2 = FIX16(4);
-        playerShots[i].hitbox_y2 = FIX16(4);
-*/
+        /*
+           playerShots[i].hitbox_x1 = FIX16(3);
+           playerShots[i].hitbox_y1 = FIX16(3);
+           playerShots[i].hitbox_x2 = FIX16(4);
+           playerShots[i].hitbox_y2 = FIX16(4);
+           */
         obj_sprites[i] = SPR_addSprite(&shot, xpos, ypos, TILE_ATTR(PAL0, 0, FALSE, FALSE));
         SPR_setAnim(obj_sprites[i],2);
     }
 }
 
-void createRocks()
+void createRocks(u8 rockCount )
 {
 
-    for (u16 i = 0; i < MAX_ROCKS; ++i)
+    for (u8 i = 0; i < MAX_ROCKS; ++i)
     {
-        obj_pos_x[i] = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
-        obj_pos_y[i] = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
-        u8 rot = random();
-        fix16 vel = FIX16(1.0);
-        obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
-        obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
-        obj_live[i] = TRUE;
-        obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-        SPR_setAnim(obj_sprites[i], i % 4);
+        if( i < rockCount ) {
+            obj_pos_x[i] = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
+            obj_pos_y[i] = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
+            u8 rot = random();
+            fix16 vel = FIX16(5.0);
+            obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
+            obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
+            obj_live[i] = TRUE;
+            obj_hit_w[i] = FIX16(30);
+            obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+            SPR_setAnim(obj_sprites[i], i % 4);
+        } else {
+            obj_pos_x[i] = FIX16(-32);
+            obj_pos_y[i] = FIX16(-32);
+
+            obj_speed_x[i] = FIX16(0);
+            obj_speed_y[i] = FIX16(0);
+            obj_live[i] = FALSE;
+            obj_hit_w[i] = FIX16(0);
+            obj_sprites[i] = NULL;
+        }
 
     }
 
@@ -630,26 +616,26 @@ void createRocks()
 
 void createEnemies()
 {
-/*
-    for (u16 i = 0; i < MAX_ENEMIES; ++i)
-    {
-        enemies[i].pos_x = FIX16(random() % (MAP_WIDTH - 32) + i);
-        enemies[i].pos_y = FIX16(random() % (MAP_HEIGHT - 32) + i);
-        u16 rot = random() % 16;
-        fix16 vel = FIX16(1.0);
-        enemies[i].vel_x = fix16Mul(vel, deltaX[rot]);
-        enemies[i].vel_y = fix16Mul(vel, deltaY[rot]);
-        enemies[i].active = TRUE;
-        enemies[i].hitbox_x1 = FIX16(2);
-        enemies[i].hitbox_y1 = FIX16(2);
-        enemies[i].hitbox_x2 = FIX16(30);
-        enemies[i].hitbox_y2 = FIX16(30);
-        enemies[i].hitpoints = 5;
+    /*
+       for (u16 i = 0; i < MAX_ENEMIES; ++i)
+       {
+       enemies[i].pos_x = FIX16(random() % (MAP_WIDTH - 32) + i);
+       enemies[i].pos_y = FIX16(random() % (MAP_HEIGHT - 32) + i);
+       u16 rot = random() % 16;
+       fix16 vel = FIX16(1.0);
+       enemies[i].vel_x = fix16Mul(vel, deltaX[rot]);
+       enemies[i].vel_y = fix16Mul(vel, deltaY[rot]);
+       enemies[i].active = TRUE;
+       enemies[i].hitbox_x1 = FIX16(2);
+       enemies[i].hitbox_y1 = FIX16(2);
+       enemies[i].hitbox_x2 = FIX16(30);
+       enemies[i].hitbox_y2 = FIX16(30);
+       enemies[i].hitpoints = 5;
 
-        enemies[i].sprite = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-        SPR_setAnim(enemies[i].sprite, 0);
-    }
-*/
+       enemies[i].sprite = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+       SPR_setAnim(enemies[i].sprite, 0);
+       }
+       */
 }
 
 static void createExplosions()
@@ -659,23 +645,23 @@ static void createExplosions()
 
     for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
     {
-/*
-        explosions[i].pos_x = xpos;
-        explosions[i].pos_y = ypos;
-        explosions[i].vel_x = FIX16(0);
-        explosions[i].vel_y = FIX16(0);
-        explosions[i].active = FALSE;
-        explosions[i].hitbox_x1 = FIX16(0);
-        explosions[i].hitbox_y1 = FIX16(0);
-        explosions[i].hitbox_x2 = FIX16(0);
-        explosions[i].hitbox_y2 = FIX16(0);
+        /*
+           explosions[i].pos_x = xpos;
+           explosions[i].pos_y = ypos;
+           explosions[i].vel_x = FIX16(0);
+           explosions[i].vel_y = FIX16(0);
+           explosions[i].active = FALSE;
+           explosions[i].hitbox_x1 = FIX16(0);
+           explosions[i].hitbox_y1 = FIX16(0);
+           explosions[i].hitbox_x2 = FIX16(0);
+           explosions[i].hitbox_y2 = FIX16(0);
 
-        explosions[i].sprite = SPR_addSprite(&explosion, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR(PAL0, 0, FALSE, FALSE));
-        SPR_setAnim(explosions[i].sprite, i % 4);
+           explosions[i].sprite = SPR_addSprite(&explosion, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR(PAL0, 0, FALSE, FALSE));
+           SPR_setAnim(explosions[i].sprite, i % 4);
 
-        SPR_setVisibility(explosions[i].sprite, HIDDEN);
-        SPR_setDepth(explosions[i].sprite, SPR_MIN_DEPTH);
-*/
+           SPR_setVisibility(explosions[i].sprite, HIDDEN);
+           SPR_setDepth(explosions[i].sprite, SPR_MIN_DEPTH);
+           */
     }
 }
 
@@ -746,12 +732,12 @@ int main(bool hard)
     //player.hitbox_y2 = FIX16(13);
     //playerRotation = MIN_ROTATION_INDEX;
     // playerRotation = FIX16(12);
-   
+
 
 
     createPlayerShots();
     //createExplosions();
-    createRocks();
+    createRocks(MAX_ROCKS);
     //createEnemies();
 
     JOY_setEventHandler(&inputCallback);
@@ -763,7 +749,7 @@ int main(bool hard)
 
         // read game pads and make initial calcs
         handleInput();
-/*
+        /*
         // output calcs
         char thrX[10];
         fix16ToStr( thrustX[shipDir], thrX, 4 );
@@ -808,7 +794,7 @@ int main(bool hard)
         fix16ToStr( obj_pos_y[MAX_OBJECTS-MAX_PLAYER_SHOTS], shtY, 4 );
         sprintf( message, "SHOT x: %s y: %s t: %d ",  shtX, shtY, obj_ticks[MAX_OBJECTS-MAX_PLAYER_SHOTS]);
         VDP_drawText(message, 1,7 );
-*/
+        */
 
 
 
