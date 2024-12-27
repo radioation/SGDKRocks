@@ -19,7 +19,7 @@
 #define SHOT_OFFSET_X       8 
 #define SHOT_OFFSET_Y       8 
 #define MAX_PLAYER_SHOTS    4
-#define PLAYER_SHOT_TIME    20
+#define PLAYER_SHOT_TIME    24
 
 
 
@@ -259,8 +259,8 @@ void inputCallback(u16 joy, u16 changed, u16 state)
 
                 obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
                 obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
-                obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 3 );
-                obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 3 );
+                obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 5 );
+                obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 5 );
                 obj_live[i] = TRUE;
                 obj_ticks[i] = 0; // you do need this.
                 break;
@@ -296,22 +296,24 @@ void handleInput()
         if (value & BUTTON_UP)
         {
             // thrust
-            ship_accel_x += (thrustX[shipDir] >> 2);
+            //ship_accel_x += (thrustX[shipDir] >> 2);
+            ship_accel_x += thrustX[shipDir];
             ship_speed_x += ship_accel_x;
-            if( ship_speed_x > FIX16(0.0) && ship_speed_x >  max_speed_x[shipDir] ) {
+            if( ship_speed_x > FIX16(0.0) && ship_accel_x > FIX16(0.0) && ship_speed_x >  max_speed_x[shipDir] ) {
                 ship_speed_x = max_speed_x[shipDir];
                 ship_accel_x = FIX16(0.0);
-            } else if ( ship_speed_x < FIX16(0) && ship_speed_x <  max_speed_x[shipDir] ) {
+            } else if ( ship_speed_x < FIX16(0) && ship_accel_x < FIX16(0.0) && ship_speed_x <  max_speed_x[shipDir] ) {
                 ship_speed_x = max_speed_x[shipDir];
                 ship_accel_x = FIX16(0.0);
             }
 
-            ship_accel_y += (thrustY[shipDir] >> 2);
+            //ship_accel_y += (thrustY[shipDir] >> 2);
+            ship_accel_y += thrustY[shipDir];
             ship_speed_y += ship_accel_y;
-            if( ship_speed_y > FIX16(0.0) && ship_speed_y >  max_speed_y[shipDir] ) {
+            if( ship_speed_y > FIX16(0.0) && ship_accel_y > FIX16(0.0) && ship_speed_y >  max_speed_y[shipDir] ) {
                 ship_speed_y = max_speed_y[shipDir];
                 ship_accel_y = FIX16(0.0);
-            } else if ( ship_speed_y < FIX16(0.0) && ship_speed_y < max_speed_y[shipDir] ) {
+            } else if ( ship_speed_y < FIX16(0.0) && ship_accel_y < FIX16(0.0) && ship_speed_y < max_speed_y[shipDir] ) {
                 ship_speed_y = max_speed_y[shipDir];
                 ship_accel_y = FIX16(0.0);
             }
@@ -323,20 +325,25 @@ void handleInput()
             // not thrusting, check x and y movemtn components
             //  and turn orn acceleration to counter.
             if( ship_speed_x > FIX16(0.0) ) {
+                ship_accel_x = FIX16(-0.07);
+/*
                 ship_accel_x = -( ship_speed_x >> 3 );
                 if ( ship_accel_x == FIX16(0.0 ) ){
                     ship_accel_x = FIX16(-0.05);
                 }
+*/
                 ship_speed_x += ship_accel_x;
                 if( ship_speed_x <= FIX16(0.0) ) {
                     ship_speed_x = FIX16(0.0);
                     ship_accel_x = FIX16(0.0);
                 }
             } else if( ship_speed_x < FIX16(0.0) ) {
+                ship_accel_x = FIX16(0.07);
+/*
                 ship_accel_x =  -(ship_speed_x >> 3);
                 if ( ship_accel_x == FIX16(0.0 ) ){
                     ship_accel_x = FIX16(0.05);
-                }
+                }*/
                 ship_speed_x += ship_accel_x;
                 if( ship_speed_x >= FIX16(0.0) ) {
                     ship_speed_x = FIX16(0.0);
@@ -345,20 +352,26 @@ void handleInput()
             }
 
             if( ship_speed_y > FIX16(0.0) ) {
+                ship_accel_y = FIX16(-0.07);
+/*
                 ship_accel_y = -( ship_speed_y >> 3 );
                 if ( ship_accel_y == FIX16(0.0 ) ){
                     ship_accel_y = FIX16(-0.05);
                 }
+*/
                 ship_speed_y += ship_accel_y;
                 if( ship_speed_y <= FIX16(0.0) ) {
                     ship_speed_y = FIX16(0.0);
                     ship_accel_y = FIX16(0.0);
                 }
             } else if( ship_speed_y < FIX16(0.0) ) {
+                ship_accel_y = FIX16(0.07);
+/*
                 ship_accel_y = -( ship_speed_y >> 3 );
                 if ( ship_accel_y == FIX16(0.0 ) ){
                     ship_accel_y = FIX16(0.05);
                 }
+*/
                 ship_speed_y += ship_accel_y;
                 if( ship_speed_y >= FIX16(0.0) ) {
                     ship_speed_y = FIX16(0.0);
@@ -841,17 +854,21 @@ int main(bool hard)
     // Setup Thrust Table
     u16 pos = 0;
     for( s16 i = 64; i >= 0; i-- ) {
-        thrustX[pos] = cosFix16(i * 4);
-        max_speed_x[pos] = fix16Mul( max_speed, thrustX[pos]);
-        thrustY[pos] = -sinFix16(i * 4);  // flip the Y. We're not mathemagicians
-        max_speed_y[pos] = fix16Mul( max_speed, thrustY[pos]);
+        thrustX[pos] =  fix16Div( cosFix16(i * 4), FIX16(5));
+        max_speed_x[pos] = fix16Mul( max_speed, cosFix16(i*4));
+        thrustY[pos] = -fix16Div( sinFix16(i * 4), FIX16(5));  // flip the Y. We're not mathemagicians
+        max_speed_y[pos] = -fix16Mul( max_speed, sinFix16(i*4));
         pos++;
     }
     for( s16 i = 255; i > 64; i-- ) {
-        thrustX[pos] = cosFix16(i * 4);
-        max_speed_x[pos] = fix16Mul( max_speed, thrustX[pos]);
-        thrustY[pos] = -sinFix16(i * 4);
-        max_speed_y[pos] = fix16Mul( max_speed, thrustY[pos]);
+        //thrustX[pos] = cosFix16(i * 4);
+        //max_speed_x[pos] = fix16Mul( max_speed, thrustX[pos]);
+        //thrustY[pos] = -sinFix16(i * 4);
+        //max_speed_y[pos] = fix16Mul( max_speed, thrustY[pos]);
+        thrustX[pos] =  fix16Div( cosFix16(i * 4), FIX16(5));
+        max_speed_x[pos] = fix16Mul( max_speed, cosFix16(i*4));
+        thrustY[pos] = -fix16Div( sinFix16(i * 4), FIX16(5));  // flip the Y. We're not mathemagicians
+        max_speed_y[pos] = -fix16Mul( max_speed, sinFix16(i*4));
         pos++;
     }
 
