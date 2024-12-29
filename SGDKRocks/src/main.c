@@ -83,8 +83,6 @@ u8 shipDir = 0; // 0 is up
 const u8 angleStep = 3; // turn rate.
 
 
-Sprite *blink_start_sprite;
-Sprite *blink_end_sprite;
 Sprite *ship_sprite;
 fix16 ship_accel_x = FIX16(0.0);
 fix16 ship_accel_y = FIX16(0.0);
@@ -97,8 +95,12 @@ fix16 max_speed_x[256];
 fix16 max_speed_y[256];
 const s16 playfield_width = 320;
 const s16 playfield_height = 224;
-
-
+Sprite *blink_sprite;
+static u8 prevBlinkState = 0;
+static u8 currBlinkState = 0;
+static bool isBlinkDown = FALSE;
+fix16 ship_blink_pos_x = FIX16(0.0);
+fix16 ship_blink_pos_y = FIX16(0.0);
 
 void clear_objs() {
     memset( obj_sprites, 0, sizeof( obj_sprites ));
@@ -237,9 +239,9 @@ void inputCallback(u16 joy, u16 changed, u16 state)
 void handleInput()
 {
 
-    u16 value = JOY_readJoypad(JOY_1);
+    u16 currState = JOY_readJoypad(JOY_1);
     // check rotation every frame.
-    if (value & BUTTON_LEFT)
+    if (currState & BUTTON_LEFT)
     {
         shipDir -=angleStep;
         // ship rotation with 32 total frames and 256 total dirs. 1 frame has to cover
@@ -248,7 +250,7 @@ void handleInput()
         u8 tmpDir = shipDir + 4;
         SPR_setAnim(ship_sprite, tmpDir >> 3);
     }
-    else if (value & BUTTON_RIGHT)
+    else if (currState & BUTTON_RIGHT)
     {
         shipDir +=angleStep;
         u8 tmpDir = shipDir + 4;
@@ -256,9 +258,24 @@ void handleInput()
 
     }
 
+    if (currState & BUTTON_B) {
+        if( !isBlinkDown ) {
+            isBlinkDown = TRUE;
+            SPR_setVisibility(blink_sprite, VISIBLE);
+        }
+    } else {
+       if( isBlinkDown ) {
+            // just released blink
+            isBlinkDown = FALSE;
+            ship_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
+            ship_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
+            SPR_setVisibility(blink_sprite, HIDDEN);
+       }
+    }
+
     if( tick & 0x01 ) {
         // check thrust every other frame.
-        if (value & BUTTON_UP)
+        if (currState & BUTTON_UP)
         {
             // thrust
             //ship_accel_x += (thrustX[shipDir] >> 2);
@@ -628,8 +645,16 @@ void update()
 */
 
     updateCameraPos();
-    SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
-    SPR_setPosition(blink_start_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+    if( isBlinkDown && ( tick & 0x04 ) ) {
+        ship_blink_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
+        ship_blink_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
+        SPR_setPosition(ship_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
+        SPR_setPosition(blink_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
+        
+    } else {
+        SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+        SPR_setPosition(blink_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+    }
 
     //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
 }
@@ -909,6 +934,7 @@ int main(bool hard)
     ship_pos_y = FIX16(- 12);
     //ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
     blink_sprite = SPR_addSprite(&blink2, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    SPR_setVisibility(blink_sprite, HIDDEN);
     ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
 
