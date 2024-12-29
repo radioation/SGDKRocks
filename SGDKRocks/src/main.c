@@ -26,9 +26,14 @@
 // Define enemy constants
 
 #define MAX_OBJECTS         45
-// leave 8 of the objs for ufos and player shots
+// leave 8 of the objs for UFOs and player shots  ( 4 player shots, 2 UFOS, and 2 ufo shots )
 #define MAX_ROCKS           37
 #define MAX_EXPLOSIONS      6
+
+#define UFO_SLOT            37
+
+#define UFO_SPAWN_TIME  0x02f8
+static u16 ufoTick = 0; 
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -78,6 +83,8 @@ u8 shipDir = 0; // 0 is up
 const u8 angleStep = 3; // turn rate.
 
 
+Sprite *blink_start_sprite;
+Sprite *blink_end_sprite;
 Sprite *ship_sprite;
 fix16 ship_accel_x = FIX16(0.0);
 fix16 ship_accel_y = FIX16(0.0);
@@ -344,6 +351,181 @@ void handleInput()
 
 }
 
+void createUfo( )  {
+}
+
+void aimUfoShot()  {
+}
+
+void updateUfo() 
+{
+// some pieces of real asteroids
+
+// 
+
+
+/*  They only updated every 4 frames
+6b93: a5 5c        UpdateScr       lda     FrameTimer              ;Update saucers only every 4th frame
+6b95: 29 03                        and     #$03                    ;Is this the 4th frame?
+6b97: f0 01                        beq     ChkScrExplode           ;If so, branch to continue processing 
+*/
+
+/*
+ They used a timer, duh
+6bb7: ce f7 02     UpdateScrTimer  dec     ScrTimer                ;Is it time to re-spawn a saucer?
+6bba: d0 dd                        bne     EndUpdateScr            ;If not, branch to exit
+
+*/
+    ufoTick++; 
+    if( obj_live[UFO_SLOT] == FALSE ) {
+        if( ufoTick >= UFO_SPAWN_TIME ) {
+            // create UFO
+            createUfo();
+            ufoTick = 0;
+        }
+        return;
+    } else {
+        // do motion
+        // randomly change Y veolcity every 128 frames
+        if (ufoTick % 0x03 ) {
+        }
+    }
+
+
+/*
+ Big saucers shoot randomly
+
+
+6c5c: 4a                           lsr     A                       ;If its a large saucer, prepare to shoot a random shot
+6c5d: f0 06                        beq     GetScrShpDistance       ;If its a small saucer, prepare to shoot an aimed shot
+6c5f: 20 b5 77                     jsr     GetRandNum              ;Get a random number
+6c62: 4c c2 6c                     jmp     ScrShoot                ;Prepare to generate a saucer bullet
+*/
+
+
+
+
+/*
+ They randomly vary Y velocity 
+6c34: a5 5c        ScrYVelocity    lda     FrameTimer              ;Randomly change saucer Y velocity every 128 frames
+6c36: 0a                           asl     A                       ;Is it time to change the saucer's Y velocity?
+6c37: d0 0c                        bne     ChkScrUpdate            ;If not, branch
+6c39: 20 b5 77                     jsr     GetRandNum              ;Get a random number
+6c3c: 29 03                        and     #%00000011              ;Keep the lower 2 bits for index into table below
+
+6c3f: bd d1 6c                     lda     ScrYSpeedTbl,x          ;Load new Y velocity value for the saucer
+6c42: 8d 62 02                     sta     SaucerYSpeed
+*/
+
+/* 
+ small ufo aim
+
+6c92: ad ed 02                     lda     ShipYPosLo
+6c95: 38                           sec                             ;Get difference between saucer and ship X position low byte
+6c96: ed ee 02                     sbc     ScrYPosLo
+6c99: 85 0b                        sta     GenByte0B               ;Save result
+6c9b: ad a7 02                     lda     ShipYPosHi              ;Get difference between saucer and ship X position high byte
+6c9e: ed a8 02                     sbc     ScrYPosHi
+6ca1: 20 ec 77                     jsr     NextScrShpDist          ;Calculate next frame saucer/ship Y distance
+6ca4: a8                           tay                             ;Save Y distance data for bullet
+                   ; 
+6ca5: 20 f0 76                     jsr     CalcScrShotDir          ;Calculate the small saucer's shot direction
+*/
+
+
+/*
+ They anticipate next distance for small saucer shots
+
+77ec: 06 0b        NextScrShpDist  asl     GenByte0B
+77ee: 2a                           rol     A                       ;Get the signed difference between
+77ef: 06 0b                        asl     GenByte0B               ; the ship and saucer upper 4 bits
+77f1: 2a                           rol     A
+77f2: 38                           sec                             ;Predict next location of saucer with respect to the ship
+77f3: e5 0c                        sbc     GenByte0C               ; by subtracting the current saucer XY velocity from the
+77f5: 60                           rts                             ; from the saucer/ship distance
+*/
+
+
+/* 
+ * actual shot angle is based on x and y distances
+
+ ; 
+                   ; Calculate small saucer shot velocity.
+                   ; 
+76f0: 98           CalcScrShotDir  tya                             ;Load the Y distance between the saucer and the ship
+76f1: 10 09                        bpl     ScrShotXDir             ;Is Y direction positive? If so, branch to do X direction
+76f3: 20 08 77                     jsr     TwosCompliment          ;Calculate the 2's compliment of the Y distance
+76f6: 20 fc 76                     jsr     ScrShotXDir             ;Calculate the X direction of the saucer shot
+76f9: 4c 08 77                     jmp     TwosCompliment          ;Calculate the 2's compliment of the value in A
+
+76fc: a8           ScrShotXDir     tay                             ;Save the modified Y shot distance
+76fd: 8a                           txa                             ;Get the the raw X shot distance
+76fe: 10 0e                        bpl     CalcScrShotAngle        ;Is X direction positive? If so, branch to calculate shot angle
+7700: 20 08 77                     jsr     TwosCompliment          ;Calculate the 2's compliment of the value in A
+7703: 20 0e 77                     jsr     CalcScrShotAngle        ;Calculate the small saucer's shot angle
+7706: 49 80                        eor     #$80                    ;Set the appropriate quadrant for the bullet
+                   ; 
+                   ; 2's compliment.
+                   ; 
+7708: 49 ff        TwosCompliment  eor     #$ff
+770a: 18                           clc                             ;Calculate the 2's compliment of the value in A
+770b: 69 01                        adc     #$01
+770d: 60                           rts
+
+                   ; 
+                   ; Calculate small saucer shot angle.
+                   ; 
+                   • Clear variables
+                   ]ShotXYDistance .var    $0c    {addr/1}
+
+                   CalcScrShotAngle
+770e: 85 0c                        sta     ]ShotXYDistance         ;Store shot modified X distance
+7710: 98                           tya
+7711: c5 0c                        cmp     ]ShotXYDistance         ;Is X and Y distance the same?
+7713: f0 10                        beq     ShotAngle45             ;If so, angle is 45 degrees.  Branch to set and exit
+7715: 90 11                        bcc     LookUpAngle             ;Is angle in lower 45 degrees of quadrant? if so, branch
+7717: a4 0c                        ldy     ]ShotXYDistance         ;Swap X and Y components as the shot is
+7719: 85 0c                        sta     ]ShotXYDistance         ; in the upper 45 degrees of the quadrant
+771b: 98                           tya
+771c: 20 28 77                     jsr     LookUpAngle             ;Look up angle but return to find proper quadrant
+771f: 38                           sec                             ;Set the appropriate quadrant for the bullet
+7720: e9 40                        sbc     #$40
+7722: 4c 08 77                     jmp     TwosCompliment          ;Calculate the 2's compliment of the value in A
+
+7725: a9 20        ShotAngle45     lda     #$20                    ;Player's ship is at a 45 degree angle to the saucer
+7727: 60                           rts
+
+7728: 20 6c 77     LookUpAngle     jsr     FindScrAngleIndex       ;Find the index in the table below for the shot angle
+772b: bd 2f 77                     lda     ShotAngleTbl,x
+772e: 60                           rts                             ;Look up the proper angle and exit
+
+                   ; 
+                   ; The following table divides 45 degrees of a circle into 16 pieces.  Its used
+                   ; to calculate the direction of a bullet from a small saucer to the player's
+                   ; ship.  The other angles in the circle are derived from this table.
+                   ; 
+772f: 00 02 05 07+ ShotAngleTbl    .bulk   $00,$02,$05,$07,$0a,$0c,$0f,$11,$13,$15,$17,$19,$1a,$1c,$1d,$1f 
+*/
+
+
+
+/*
+ if score is lower than 35000 they add a small inaccuracy to the saucer shot
+
+6ca8: 85 62                        sta     ScrBulletDir            ;Saucer shot direction is the same type of data as ship direction
+6caa: 20 b5 77                     jsr     GetRandNum              ;Get a random number
+6cad: a6 19                        ldx     ScoreIndex
+6caf: b4 53                        ldy     PlayerScores+1,x        ;Is the player's score less than 35,000?
+6cb1: c0 35                        cpy     #$35                    ;If so, add inaccuracy to small saucer's bullet
+6cb3: a2 00                        ldx     #$00
+*/
+
+
+
+
+
+}
+
 void update()
 {
 
@@ -364,6 +546,8 @@ void update()
     }
 
 
+
+
     // deactiveate shots if they've been around too long.
     for (u16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
     {
@@ -376,6 +560,7 @@ void update()
             }
         }
     }
+
 
     // update non-players objects.
     for (u16 i = 0; i < MAX_OBJECTS; ++i)
@@ -444,6 +629,7 @@ void update()
 
     updateCameraPos();
     SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+    SPR_setPosition(blink_start_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
 
     //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
 }
@@ -722,9 +908,11 @@ int main(bool hard)
     ship_pos_x = FIX16(- 12);
     ship_pos_y = FIX16(- 12);
     //ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
+    blink_sprite = SPR_addSprite(&blink2, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
-
     SPR_setAnim(ship_sprite, 0);
+
+    //Sprite* bsprite = SPR_addSprite(&blink, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
 
     //player.hitbox_x1 = FIX16(3);
     //player.hitbox_y1 = FIX16(3);
@@ -796,7 +984,8 @@ int main(bool hard)
         VDP_drawText(message, 1,7 );
         */
 
-
+        // check UFO every 4th frame (b00000011)
+            updateUfo();
 
         // move sprites
         update();

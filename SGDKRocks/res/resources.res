@@ -5,8 +5,11 @@ IMAGE blue_wing "imgs/blue_wing.png" NONE ALL
 
 
 SPRITE ship "sprites/ship24red.png" 3 3 NONE
+SPRITE blink2 "sprites/blink2.png" 3 3 NONE 3
 SPRITE ufo "sprites/ufo.png" 3 3 NONE 1
 SPRITE small_ufo "sprites/small_ufo.png" 2 2 NONE 1
+SPRITE shard "sprites/shard.png" 2 2 NONE 
+SPRITE star "sprites/star.png" 4 4 NONE 
 
 SPRITE xs_rock "sprites/xs_rock.png" 1 1 NONE 4
 SPRITE small_rock "sprites/small_rock.png" 2 2 NONE 4
