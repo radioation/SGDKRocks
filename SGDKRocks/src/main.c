@@ -65,11 +65,23 @@ fix16 obj_speed_x[MAX_OBJECTS];
 fix16 obj_speed_y[MAX_OBJECTS];
 fix16 obj_pos_x[MAX_OBJECTS];
 fix16 obj_pos_y[MAX_OBJECTS];
-u8 obj_width[MAX_OBJECTS];
 fix16 obj_hit_w[MAX_OBJECTS];
 s16 obj_ticks[MAX_OBJECTS];
 bool obj_live[MAX_OBJECTS];
 
+#define NO_TYPE 0
+#define PLAYER 1
+#define PLAYER_SHOT 3
+
+#define ROCK 20
+#define MID_ROCK 50
+#define SMALL_ROCK 75
+#define UFO 200
+#define SMALL_UFO 400
+#define STAR 150 
+#define SHARD 350 
+
+u8 obj_type[MAX_OBJECTS];
 
 /////////////////////////////////////////////////////////////////////////////////
 // player variables
@@ -108,7 +120,7 @@ void clear_objs() {
     memset( obj_speed_y, 0, sizeof( obj_speed_y ));
     memset( obj_pos_x, 0, sizeof( obj_pos_x ));
     memset( obj_pos_y, 0, sizeof( obj_pos_y ));
-    memset( obj_width, 0, sizeof( obj_width ));
+    memset( obj_type, 0, sizeof( obj_type ));
     memset( obj_hit_w, 0, sizeof( obj_hit_w ));
 
     memset( obj_ticks, 0, sizeof( obj_ticks ));
@@ -124,28 +136,28 @@ u8 currentExplosion = 0;
 
 static void addExplosion(fix16 pos_x, fix16 pos_y)
 {
-/*
-    if (explosions[currentExplosion].active == FALSE)
+    /*
+       if (explosions[currentExplosion].active == FALSE)
+       {
+    // use it
+    explosions[currentExplosion].pos_x = pos_x;
+    explosions[currentExplosion].pos_y = pos_y;
+
+    explosions[currentExplosion].active = TRUE;
+    explosions[currentExplosion].ticks = 0;
+    SPR_setVisibility(explosions[currentExplosion].sprite, VISIBLE);
+    SPR_setPosition(explosions[currentExplosion].sprite, fix16ToInt(explosions[currentExplosion].pos_x), fix16ToInt(explosions[currentExplosion].pos_y));
+
+    XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
+
+    // point to next one
+    ++currentExplosion;
+    if (currentExplosion >= MAX_EXPLOSIONS)
     {
-        // use it
-        explosions[currentExplosion].pos_x = pos_x;
-        explosions[currentExplosion].pos_y = pos_y;
-
-        explosions[currentExplosion].active = TRUE;
-        explosions[currentExplosion].ticks = 0;
-        SPR_setVisibility(explosions[currentExplosion].sprite, VISIBLE);
-        SPR_setPosition(explosions[currentExplosion].sprite, fix16ToInt(explosions[currentExplosion].pos_x), fix16ToInt(explosions[currentExplosion].pos_y));
-
-        XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
-
-        // point to next one
-        ++currentExplosion;
-        if (currentExplosion >= MAX_EXPLOSIONS)
-        {
-            currentExplosion = 0;
-        }
+    currentExplosion = 0;
     }
-*/
+    }
+    */
 }
 
 
@@ -264,13 +276,13 @@ void handleInput()
             SPR_setVisibility(blink_sprite, VISIBLE);
         }
     } else {
-       if( isBlinkDown ) {
+        if( isBlinkDown ) {
             // just released blink
             isBlinkDown = FALSE;
             ship_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
             ship_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
             SPR_setVisibility(blink_sprite, HIDDEN);
-       }
+        }
     }
 
     if( tick & 0x01 ) {
@@ -308,12 +320,12 @@ void handleInput()
             //  and turn orn acceleration to counter.
             if( ship_speed_x > FIX16(0.0) ) {
                 ship_accel_x = FIX16(-0.07);
-/*
-                ship_accel_x = -( ship_speed_x >> 3 );
-                if ( ship_accel_x == FIX16(0.0 ) ){
-                    ship_accel_x = FIX16(-0.05);
-                }
-*/
+                /*
+                   ship_accel_x = -( ship_speed_x >> 3 );
+                   if ( ship_accel_x == FIX16(0.0 ) ){
+                   ship_accel_x = FIX16(-0.05);
+                   }
+                   */
                 ship_speed_x += ship_accel_x;
                 if( ship_speed_x <= FIX16(0.0) ) {
                     ship_speed_x = FIX16(0.0);
@@ -321,11 +333,11 @@ void handleInput()
                 }
             } else if( ship_speed_x < FIX16(0.0) ) {
                 ship_accel_x = FIX16(0.07);
-/*
-                ship_accel_x =  -(ship_speed_x >> 3);
-                if ( ship_accel_x == FIX16(0.0 ) ){
-                    ship_accel_x = FIX16(0.05);
-                }*/
+                /*
+                   ship_accel_x =  -(ship_speed_x >> 3);
+                   if ( ship_accel_x == FIX16(0.0 ) ){
+                   ship_accel_x = FIX16(0.05);
+                   }*/
                 ship_speed_x += ship_accel_x;
                 if( ship_speed_x >= FIX16(0.0) ) {
                     ship_speed_x = FIX16(0.0);
@@ -335,12 +347,12 @@ void handleInput()
 
             if( ship_speed_y > FIX16(0.0) ) {
                 ship_accel_y = FIX16(-0.07);
-/*
-                ship_accel_y = -( ship_speed_y >> 3 );
-                if ( ship_accel_y == FIX16(0.0 ) ){
-                    ship_accel_y = FIX16(-0.05);
-                }
-*/
+                /*
+                   ship_accel_y = -( ship_speed_y >> 3 );
+                   if ( ship_accel_y == FIX16(0.0 ) ){
+                   ship_accel_y = FIX16(-0.05);
+                   }
+                   */
                 ship_speed_y += ship_accel_y;
                 if( ship_speed_y <= FIX16(0.0) ) {
                     ship_speed_y = FIX16(0.0);
@@ -348,12 +360,12 @@ void handleInput()
                 }
             } else if( ship_speed_y < FIX16(0.0) ) {
                 ship_accel_y = FIX16(0.07);
-/*
-                ship_accel_y = -( ship_speed_y >> 3 );
-                if ( ship_accel_y == FIX16(0.0 ) ){
-                    ship_accel_y = FIX16(0.05);
-                }
-*/
+                /*
+                   ship_accel_y = -( ship_speed_y >> 3 );
+                   if ( ship_accel_y == FIX16(0.0 ) ){
+                   ship_accel_y = FIX16(0.05);
+                   }
+                   */
                 ship_speed_y += ship_accel_y;
                 if( ship_speed_y >= FIX16(0.0) ) {
                     ship_speed_y = FIX16(0.0);
@@ -376,19 +388,19 @@ void aimUfoShot()  {
 
 void updateUfo() 
 {
-// some pieces of real asteroids
+    // some pieces of real asteroids
 
-// 
+    // 
 
 
-/*  They only updated every 4 frames
+    /*  They only updated every 4 frames
 6b93: a5 5c        UpdateScr       lda     FrameTimer              ;Update saucers only every 4th frame
 6b95: 29 03                        and     #$03                    ;Is this the 4th frame?
 6b97: f0 01                        beq     ChkScrExplode           ;If so, branch to continue processing 
 */
 
-/*
- They used a timer, duh
+    /*
+       They used a timer, duh
 6bb7: ce f7 02     UpdateScrTimer  dec     ScrTimer                ;Is it time to re-spawn a saucer?
 6bba: d0 dd                        bne     EndUpdateScr            ;If not, branch to exit
 
@@ -409,8 +421,8 @@ void updateUfo()
     }
 
 
-/*
- Big saucers shoot randomly
+    /*
+       Big saucers shoot randomly
 
 
 6c5c: 4a                           lsr     A                       ;If its a large saucer, prepare to shoot a random shot
@@ -422,8 +434,8 @@ void updateUfo()
 
 
 
-/*
- They randomly vary Y velocity 
+    /*
+       They randomly vary Y velocity 
 6c34: a5 5c        ScrYVelocity    lda     FrameTimer              ;Randomly change saucer Y velocity every 128 frames
 6c36: 0a                           asl     A                       ;Is it time to change the saucer's Y velocity?
 6c37: d0 0c                        bne     ChkScrUpdate            ;If not, branch
@@ -434,8 +446,8 @@ void updateUfo()
 6c42: 8d 62 02                     sta     SaucerYSpeed
 */
 
-/* 
- small ufo aim
+    /* 
+       small ufo aim
 
 6c92: ad ed 02                     lda     ShipYPosLo
 6c95: 38                           sec                             ;Get difference between saucer and ship X position low byte
@@ -445,13 +457,13 @@ void updateUfo()
 6c9e: ed a8 02                     sbc     ScrYPosHi
 6ca1: 20 ec 77                     jsr     NextScrShpDist          ;Calculate next frame saucer/ship Y distance
 6ca4: a8                           tay                             ;Save Y distance data for bullet
-                   ; 
+; 
 6ca5: 20 f0 76                     jsr     CalcScrShotDir          ;Calculate the small saucer's shot direction
 */
 
 
-/*
- They anticipate next distance for small saucer shots
+    /*
+       They anticipate next distance for small saucer shots
 
 77ec: 06 0b        NextScrShpDist  asl     GenByte0B
 77ee: 2a                           rol     A                       ;Get the signed difference between
@@ -463,12 +475,12 @@ void updateUfo()
 */
 
 
-/* 
- * actual shot angle is based on x and y distances
+    /* 
+     * actual shot angle is based on x and y distances
 
- ; 
-                   ; Calculate small saucer shot velocity.
-                   ; 
+     ; 
+     ; Calculate small saucer shot velocity.
+     ; 
 76f0: 98           CalcScrShotDir  tya                             ;Load the Y distance between the saucer and the ship
 76f1: 10 09                        bpl     ScrShotXDir             ;Is Y direction positive? If so, branch to do X direction
 76f3: 20 08 77                     jsr     TwosCompliment          ;Calculate the 2's compliment of the Y distance
@@ -481,21 +493,21 @@ void updateUfo()
 7700: 20 08 77                     jsr     TwosCompliment          ;Calculate the 2's compliment of the value in A
 7703: 20 0e 77                     jsr     CalcScrShotAngle        ;Calculate the small saucer's shot angle
 7706: 49 80                        eor     #$80                    ;Set the appropriate quadrant for the bullet
-                   ; 
-                   ; 2's compliment.
-                   ; 
+; 
+; 2's compliment.
+; 
 7708: 49 ff        TwosCompliment  eor     #$ff
 770a: 18                           clc                             ;Calculate the 2's compliment of the value in A
 770b: 69 01                        adc     #$01
 770d: 60                           rts
 
-                   ; 
-                   ; Calculate small saucer shot angle.
-                   ; 
-                   • Clear variables
-                   ]ShotXYDistance .var    $0c    {addr/1}
+; 
+; Calculate small saucer shot angle.
+; 
+• Clear variables
+]ShotXYDistance .var    $0c    {addr/1}
 
-                   CalcScrShotAngle
+CalcScrShotAngle
 770e: 85 0c                        sta     ]ShotXYDistance         ;Store shot modified X distance
 7710: 98                           tya
 7711: c5 0c                        cmp     ]ShotXYDistance         ;Is X and Y distance the same?
@@ -516,18 +528,18 @@ void updateUfo()
 772b: bd 2f 77                     lda     ShotAngleTbl,x
 772e: 60                           rts                             ;Look up the proper angle and exit
 
-                   ; 
-                   ; The following table divides 45 degrees of a circle into 16 pieces.  Its used
-                   ; to calculate the direction of a bullet from a small saucer to the player's
-                   ; ship.  The other angles in the circle are derived from this table.
-                   ; 
+; 
+; The following table divides 45 degrees of a circle into 16 pieces.  Its used
+; to calculate the direction of a bullet from a small saucer to the player's
+; ship.  The other angles in the circle are derived from this table.
+; 
 772f: 00 02 05 07+ ShotAngleTbl    .bulk   $00,$02,$05,$07,$0a,$0c,$0f,$11,$13,$15,$17,$19,$1a,$1c,$1d,$1f 
 */
 
 
 
-/*
- if score is lower than 35000 they add a small inaccuracy to the saucer shot
+    /*
+       if score is lower than 35000 they add a small inaccuracy to the saucer shot
 
 6ca8: 85 62                        sta     ScrBulletDir            ;Saucer shot direction is the same type of data as ship direction
 6caa: 20 b5 77                     jsr     GetRandNum              ;Get a random number
@@ -562,9 +574,6 @@ void update()
         ship_pos_y = FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 );
     }
 
-
-
-
     // deactiveate shots if they've been around too long.
     for (u16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
     {
@@ -577,7 +586,6 @@ void update()
             }
         }
     }
-
 
     // update non-players objects.
     for (u16 i = 0; i < MAX_OBJECTS; ++i)
@@ -622,27 +630,26 @@ void update()
         }
     }
 
-
-/*
-    for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
-    {
-        if (explosions[i].active == TRUE)
-        {
-            explosions[i].ticks += 1;
-            if (explosions[i].ticks < 9)
-            {
-                //  SPR_setFrame( explosions[i].sprite, explosions[i].ticks );
-                SPR_setPosition(explosions[i].sprite, fix16ToInt(explosions[i].pos_x) - camPosX, fix16ToInt(explosions[i].pos_y) - camPosY);
-                SPR_setAnimAndFrame(explosions[i].sprite, i % 4, explosions[i].ticks);
-            }
-            else
-            {
-                explosions[i].active = FALSE;
-                SPR_setVisibility(explosions[i].sprite, HIDDEN);
-            }
-        }
+    /*
+       for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
+       {
+       if (explosions[i].active == TRUE)
+       {
+       explosions[i].ticks += 1;
+       if (explosions[i].ticks < 9)
+       {
+    //  SPR_setFrame( explosions[i].sprite, explosions[i].ticks );
+    SPR_setPosition(explosions[i].sprite, fix16ToInt(explosions[i].pos_x) - camPosX, fix16ToInt(explosions[i].pos_y) - camPosY);
+    SPR_setAnimAndFrame(explosions[i].sprite, i % 4, explosions[i].ticks);
     }
-*/
+    else
+    {
+    explosions[i].active = FALSE;
+    SPR_setVisibility(explosions[i].sprite, HIDDEN);
+    }
+    }
+    }
+    */
 
     updateCameraPos();
     if( isBlinkDown && ( tick & 0x04 ) ) {
@@ -650,7 +657,7 @@ void update()
         ship_blink_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
         SPR_setPosition(ship_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
         SPR_setPosition(blink_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
-        
+
     } else {
         SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
         SPR_setPosition(blink_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
@@ -659,108 +666,199 @@ void update()
     //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
 }
 
-static void checkCollisions()
+void createRock(u8 i, u16 rockType, fix16 x, fix16 y ) {
+
+    obj_pos_x[i] = x;
+    obj_pos_y[i] = y;
+    u8 rot = random();
+    obj_live[i] = TRUE;
+    fix16 vel = FIX16(7.0);
+    if( rockType == ROCK ) {
+        obj_hit_w[i] = FIX16(30);
+        obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    } else if ( rockType == MID_ROCK ) {
+        vel = FIX16(10.0);
+        obj_sprites[i] = SPR_addSprite(&mid_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+        obj_hit_w[i] = FIX16(22);
+    } else if ( rockType == SMALL_ROCK ) {
+        vel = FIX16(13.0);
+        obj_sprites[i] = SPR_addSprite(&small_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+        obj_hit_w[i] = FIX16(14);
+    }
+    obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
+    obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
+    SPR_setAnim(obj_sprites[i], i % 4);
+    obj_type[i] = rockType;
+}
+
+
+void createRocks(u8 rockCount )
 {
-
-/*
-    for (u16 i = 0; i < MAX_ENEMIES; ++i)
+    for (u8 i = 0; i < MAX_ROCKS; ++i)
     {
-        if (enemies[i].active == TRUE)
-        {
-            // check if ship has hit
-            if ((enemies[i].pos_x + enemies[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
-                    (enemies[i].pos_x + enemies[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
-                    (enemies[i].pos_y + enemies[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
-                    (enemies[i].pos_y + enemies[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
-            {
-                enemies[i].hitpoints -= 1;
-                if (enemies[i].hitpoints == 0)
-                {
-                    enemies[i].active = FALSE;
-                    SPR_setVisibility(enemies[i].sprite, HIDDEN);
-                    addExplosion(enemies[i].pos_x, enemies[i].pos_y);
-                }
-                // SPR_setVisibility( player.sprite, HIDDEN );
-            }
+        if( i < rockCount ) {
+            fix16 x = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
+            fix16 y = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
+            createRock( i, ROCK, x, y );
+            /*
+               obj_pos_x[i] = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
+               obj_pos_y[i] = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
+               u8 rot = random();
+               fix16 vel = FIX16(5.0);
+               obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
+               obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
+               obj_live[i] = TRUE;
+               obj_hit_w[i] = FIX16(30);
+               obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+               SPR_setAnim(obj_sprites[i], i % 4);
+               obj_type[i] = ROCK;
+               */
+        } else {
+            // clear out the rest 
+            obj_pos_x[i] = FIX16(-32);
+            obj_pos_y[i] = FIX16(-32);
 
-            for (u16 j = 0; j < MAX_PLAYER_SHOTS; ++j)
-            {
-                if (
-                        playerShots[j].active == TRUE &&
-                        (enemies[i].pos_x + enemies[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
-                        (enemies[i].pos_x + enemies[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
-                        (enemies[i].pos_y + enemies[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
-                        (enemies[i].pos_y + enemies[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
-                {
-                    enemies[i].hitpoints -= 1;
-                    if (enemies[i].hitpoints == 0)
-                    {
-                        enemies[i].active = FALSE;
-                        SPR_setVisibility(enemies[i].sprite, HIDDEN);
-                    }
-                    playerShots[j].active = FALSE;
-                    SPR_setVisibility(playerShots[j].sprite, HIDDEN);
-                    addExplosion(enemies[i].pos_x, enemies[i].pos_y);
-                }
+            obj_speed_x[i] = FIX16(0);
+            obj_speed_y[i] = FIX16(0);
+            obj_live[i] = FALSE;
+            obj_hit_w[i] = FIX16(0);
+            obj_sprites[i] = NULL;
+            obj_type[i] = NO_TYPE;
+        }
+    }
+}
+
+
+void splitRock(u16 whichRock )
+{
+    u8 count = 0;
+    fix16 x = obj_pos_x[whichRock];
+    fix16 y = obj_pos_y[whichRock];
+    u16 newType = MID_ROCK;
+    if( obj_type[whichRock] == MID_ROCK ) {
+        newType = SMALL_ROCK;
+    }
+    // u
+    for (u8 i = 0; i < MAX_ROCKS; ++i)
+    {
+        if( obj_live[i] == FALSE ) {
+            createRock( i, newType, x, y );
+            count++;
+            if ( count == 2 ) {
+                return; 
             }
         }
     }
-*/
+}
+
+static void checkCollisions()
+{
+
+    /*
+       for (u16 i = 0; i < MAX_ENEMIES; ++i)
+       {
+       if (enemies[i].active == TRUE)
+       {
+    // check if ship has hit
+    if ((enemies[i].pos_x + enemies[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
+    (enemies[i].pos_x + enemies[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
+    (enemies[i].pos_y + enemies[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
+    (enemies[i].pos_y + enemies[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
+    {
+    enemies[i].hitpoints -= 1;
+    if (enemies[i].hitpoints == 0)
+    {
+    enemies[i].active = FALSE;
+    SPR_setVisibility(enemies[i].sprite, HIDDEN);
+    addExplosion(enemies[i].pos_x, enemies[i].pos_y);
+    }
+    // SPR_setVisibility( player.sprite, HIDDEN );
+    }
+
+    for (u16 j = 0; j < MAX_PLAYER_SHOTS; ++j)
+    {
+    if (
+    playerShots[j].active == TRUE &&
+    (enemies[i].pos_x + enemies[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
+    (enemies[i].pos_x + enemies[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
+    (enemies[i].pos_y + enemies[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
+    (enemies[i].pos_y + enemies[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
+    {
+    enemies[i].hitpoints -= 1;
+    if (enemies[i].hitpoints == 0)
+    {
+    enemies[i].active = FALSE;
+    SPR_setVisibility(enemies[i].sprite, HIDDEN);
+    }
+    playerShots[j].active = FALSE;
+    SPR_setVisibility(playerShots[j].sprite, HIDDEN);
+    addExplosion(enemies[i].pos_x, enemies[i].pos_y);
+    }
+    }
+    }
+    }
+    */
 
 
     for (u16 i = 0; i < MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
     {
         if (obj_live[i] == TRUE)
         {
-/*
+            /*
             // check if ship has hit
             if ((obj_pos_x[i] + FIX16(2)) < (ship_pos_x + FIX16(3) ) &&
-                (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(21) )  &&
-                (obj_pos_y[i] + FIX16(2)) < (ship_pos_y + FIX16(3) ) &&
-                (obj_pos_y[i] + obj_hit_w[i]) > (ship_pos_y + FIX16(21) ))
+            (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(21) )  &&
+            (obj_pos_y[i] + FIX16(2)) < (ship_pos_y + FIX16(3) ) &&
+            (obj_pos_y[i] + obj_hit_w[i]) > (ship_pos_y + FIX16(21) ))
             {
-                obj_live[i] = FALSE;
-                SPR_setVisibility(obj_sprites[i], HIDDEN);
+            obj_live[i] = FALSE;
+            SPR_setVisibility(obj_sprites[i], HIDDEN);
 
-                addExplosion(obj_pos_x[i], obj_pos_y[i]);
+            addExplosion(obj_pos_x[i], obj_pos_y[i]);
             }
-*/
+            */
             for (u8 j = MAX_OBJECTS - MAX_PLAYER_SHOTS; j < MAX_OBJECTS; ++j)
             {
 
-/*
-        char message[40];
-        sprintf( message, "  check i: %d j: %d  ", i, j   );
-        VDP_drawText(message, 1,1 );
-        char objX[10];
-        fix16ToStr( obj_pos_x[i], objX, 4 );
-        char objY[10];
-        fix16ToStr( obj_pos_y[i], objY, 4 );
-        sprintf( message, "obj x: %s y: %s ", objX, objY);
-        VDP_drawText(message, 1,2 );
+                /*
+                   char message[40];
+                   sprintf( message, "  check i: %d j: %d  ", i, j   );
+                   VDP_drawText(message, 1,1 );
+                   char objX[10];
+                   fix16ToStr( obj_pos_x[i], objX, 4 );
+                   char objY[10];
+                   fix16ToStr( obj_pos_y[i], objY, 4 );
+                   sprintf( message, "obj x: %s y: %s ", objX, objY);
+                   VDP_drawText(message, 1,2 );
 
-        fix16ToStr( obj_pos_x[j], objX, 4 );
-        fix16ToStr( obj_pos_y[j], objY, 4 );
-        sprintf( message, "shot x: %s y: %s ", objX, objY);
-        VDP_drawText(message, 1,3 );
-*/
+                   fix16ToStr( obj_pos_x[j], objX, 4 );
+                   fix16ToStr( obj_pos_y[j], objY, 4 );
+                   sprintf( message, "shot x: %s y: %s ", objX, objY);
+                   VDP_drawText(message, 1,3 );
+                   */
 
                 if ( obj_live[j] == TRUE &&
-                     (obj_pos_x[i] + FIX16(2))     < (obj_pos_x[j] + FIX16(4)) &&
-                     (obj_pos_x[i] + obj_hit_w[i]) > (obj_pos_x[j] + FIX16(4)) &&
-                     (obj_pos_y[i] + FIX16(2))     < (obj_pos_y[j] + FIX16(4)) &&
-                     (obj_pos_y[i] + obj_hit_w[i]) > (obj_pos_y[j] + FIX16(4)))
+                        (obj_pos_x[i] + FIX16(2))     < (obj_pos_x[j] + FIX16(4)) &&
+                        (obj_pos_x[i] + obj_hit_w[i]) > (obj_pos_x[j] + FIX16(4)) &&
+                        (obj_pos_y[i] + FIX16(2))     < (obj_pos_y[j] + FIX16(4)) &&
+                        (obj_pos_y[i] + obj_hit_w[i]) > (obj_pos_y[j] + FIX16(4)))
                 {
 
 
-
+                    // deactivate the rock
+                    SPR_releaseSprite( obj_sprites[i] );
                     obj_live[i] = FALSE;
-                    SPR_setVisibility(obj_sprites[i], HIDDEN);
+                    //SPR_setVisibility(obj_sprites[i], HIDDEN);
+                    // deactivate the shot
                     obj_live[j] = FALSE;
                     SPR_setVisibility(obj_sprites[j], HIDDEN);
-
+                    // play the sound
                     XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
                     addExplosion(obj_pos_x[i], obj_pos_y[i]);
+                    // make more rocks
+                    if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
+                        splitRock(i);
+                    }
                 }
             }
         }
@@ -794,36 +892,7 @@ void createPlayerShots()
     }
 }
 
-void createRocks(u8 rockCount )
-{
 
-    for (u8 i = 0; i < MAX_ROCKS; ++i)
-    {
-        if( i < rockCount ) {
-            obj_pos_x[i] = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
-            obj_pos_y[i] = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
-            u8 rot = random();
-            fix16 vel = FIX16(5.0);
-            obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
-            obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
-            obj_live[i] = TRUE;
-            obj_hit_w[i] = FIX16(30);
-            obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-            SPR_setAnim(obj_sprites[i], i % 4);
-        } else {
-            obj_pos_x[i] = FIX16(-32);
-            obj_pos_y[i] = FIX16(-32);
-
-            obj_speed_x[i] = FIX16(0);
-            obj_speed_y[i] = FIX16(0);
-            obj_live[i] = FALSE;
-            obj_hit_w[i] = FIX16(0);
-            obj_sprites[i] = NULL;
-        }
-
-    }
-
-}
 
 void createEnemies()
 {
@@ -951,7 +1020,8 @@ int main(bool hard)
 
     createPlayerShots();
     //createExplosions();
-    createRocks(MAX_ROCKS);
+    //createRocks(MAX_ROCKS);
+    createRocks(10);
     //createEnemies();
 
     JOY_setEventHandler(&inputCallback);
@@ -1011,7 +1081,7 @@ int main(bool hard)
         */
 
         // check UFO every 4th frame (b00000011)
-            updateUfo();
+        updateUfo();
 
         // move sprites
         update();
