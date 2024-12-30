@@ -119,8 +119,6 @@ fix16 ship_blink_pos_y = FIX16(0.0);
 // explosions
 
 Sprite *explosion_sprites[MAX_EXPLOSIONS];
-fix16 explosion_pos_x[MAX_EXPLOSIONS];
-fix16 explosion_pos_y[MAX_EXPLOSIONS];
 s16 explosion_ticks[MAX_EXPLOSIONS];
 bool explosion_live[MAX_EXPLOSIONS];
 
@@ -150,14 +148,11 @@ u8 currentExplosion = 0;
 
 static void showExplosion(fix16 pos_x, fix16 pos_y)
 {
-            s16 x = fix16ToInt(pos_x)- camPosX + MAP_HALF_WIDTH;
-            s16 y = fix16ToInt(pos_y)- camPosY + MAP_HALF_HEIGHT;
     if (explosion_live[currentExplosion] == FALSE)
     {
+        s16 x = fix16ToInt(pos_x)- camPosX + MAP_HALF_WIDTH;
+        s16 y = fix16ToInt(pos_y)- camPosY + MAP_HALF_HEIGHT;
         // use it
-        //explosion_pos_x[currentExplosion] = x;
-        //explosion_pos_y[currentExplosion] = y;
-
         explosion_live[currentExplosion] = TRUE;
         explosion_ticks[currentExplosion] = 0;
 
@@ -166,7 +161,7 @@ static void showExplosion(fix16 pos_x, fix16 pos_y)
 
         XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
 
-        // point to next one
+        // point to next explosion 
         ++currentExplosion;
         if (currentExplosion >= MAX_EXPLOSIONS)
         {
@@ -939,12 +934,10 @@ static void createExplosions()
     fix16 ypos = FIX16(264);
     for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
     {
-        explosion_pos_x[i] = xpos;
-        explosion_pos_y[i] = ypos;
         explosion_ticks[i] = 0;
         explosion_live[i] = FALSE;
 
-        explosion_sprites[i] = SPR_addSprite(&explosion, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR(PAL0, 0, FALSE, FALSE));
+        explosion_sprites[i] = SPR_addSprite(&explosion, -32, -32, TILE_ATTR(PAL0, 0, FALSE, FALSE));
         SPR_setAnim(explosion_sprites[i], i % 4);
         SPR_setVisibility(explosion_sprites[i], HIDDEN);
         SPR_setDepth(explosion_sprites[i], SPR_MIN_DEPTH);
