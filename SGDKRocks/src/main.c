@@ -28,7 +28,7 @@
 #define MAX_OBJECTS         45
 // leave 8 of the objs for UFOs and player shots  ( 4 player shots, 2 UFOS, and 2 ufo shots )
 #define MAX_ROCKS           37
-#define MAX_EXPLOSIONS      6
+#define MAX_EXPLOSIONS      5
 
 #define UFO_SLOT            37
 
@@ -114,6 +114,20 @@ static bool isBlinkDown = FALSE;
 fix16 ship_blink_pos_x = FIX16(0.0);
 fix16 ship_blink_pos_y = FIX16(0.0);
 
+
+/////////////////////////////////////////////////////////////////////////////////
+// explosions
+
+Sprite *explosion_sprites[MAX_EXPLOSIONS];
+fix16 explosion_pos_x[MAX_EXPLOSIONS];
+fix16 explosion_pos_y[MAX_EXPLOSIONS];
+s16 explosion_ticks[MAX_EXPLOSIONS];
+bool explosion_live[MAX_EXPLOSIONS];
+
+
+
+// utils
+
 void clear_objs() {
     memset( obj_sprites, 0, sizeof( obj_sprites ));
     memset( obj_speed_x, 0, sizeof( obj_speed_x ));
@@ -134,30 +148,31 @@ void clear_objs() {
 
 u8 currentExplosion = 0;
 
-static void addExplosion(fix16 pos_x, fix16 pos_y)
+static void showExplosion(fix16 pos_x, fix16 pos_y)
 {
-    /*
-       if (explosions[currentExplosion].active == FALSE)
-       {
-    // use it
-    explosions[currentExplosion].pos_x = pos_x;
-    explosions[currentExplosion].pos_y = pos_y;
-
-    explosions[currentExplosion].active = TRUE;
-    explosions[currentExplosion].ticks = 0;
-    SPR_setVisibility(explosions[currentExplosion].sprite, VISIBLE);
-    SPR_setPosition(explosions[currentExplosion].sprite, fix16ToInt(explosions[currentExplosion].pos_x), fix16ToInt(explosions[currentExplosion].pos_y));
-
-    XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
-
-    // point to next one
-    ++currentExplosion;
-    if (currentExplosion >= MAX_EXPLOSIONS)
+            s16 x = fix16ToInt(pos_x)- camPosX + MAP_HALF_WIDTH;
+            s16 y = fix16ToInt(pos_y)- camPosY + MAP_HALF_HEIGHT;
+    if (explosion_live[currentExplosion] == FALSE)
     {
-    currentExplosion = 0;
+        // use it
+        //explosion_pos_x[currentExplosion] = x;
+        //explosion_pos_y[currentExplosion] = y;
+
+        explosion_live[currentExplosion] = TRUE;
+        explosion_ticks[currentExplosion] = 0;
+
+        SPR_setVisibility(explosion_sprites[currentExplosion], VISIBLE);
+        SPR_setPosition(explosion_sprites[currentExplosion], x, y );
+
+        XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
+
+        // point to next one
+        ++currentExplosion;
+        if (currentExplosion >= MAX_EXPLOSIONS)
+        {
+            currentExplosion = 0;
+        }
     }
-    }
-    */
 }
 
 
@@ -630,26 +645,26 @@ void update()
         }
     }
 
-    /*
-       for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
-       {
-       if (explosions[i].active == TRUE)
-       {
-       explosions[i].ticks += 1;
-       if (explosions[i].ticks < 9)
-       {
-    //  SPR_setFrame( explosions[i].sprite, explosions[i].ticks );
-    SPR_setPosition(explosions[i].sprite, fix16ToInt(explosions[i].pos_x) - camPosX, fix16ToInt(explosions[i].pos_y) - camPosY);
-    SPR_setAnimAndFrame(explosions[i].sprite, i % 4, explosions[i].ticks);
-    }
-    else
+
+    for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
     {
-    explosions[i].active = FALSE;
-    SPR_setVisibility(explosions[i].sprite, HIDDEN);
+        if (explosion_live[i] == TRUE)
+        {
+            explosion_ticks[i] += 1;
+            if (explosion_ticks[i] < 9)
+            {
+                //  SPR_setFrame( explosions[i].sprite, explosions[i].ticks );
+                //SPR_setPosition(explosion_sprites[i], fix16ToInt(explosions[i].pos_x) - camPosX, fix16ToInt(explosions[i].pos_y) - camPosY);
+                SPR_setAnimAndFrame(explosion_sprites[i], i % 4, explosion_ticks[i]);
+            }
+            else
+            {
+                explosion_live[i] = FALSE;
+                SPR_setVisibility(explosion_sprites[i], HIDDEN);
+            }
+        }
     }
-    }
-    }
-    */
+
 
     updateCameraPos();
     if( isBlinkDown && ( tick & 0x04 ) ) {
@@ -854,7 +869,7 @@ static void checkCollisions()
                     SPR_setVisibility(obj_sprites[j], HIDDEN);
                     // play the sound
                     XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
-                    addExplosion(obj_pos_x[i], obj_pos_y[i]);
+                    showExplosion(obj_pos_x[i], obj_pos_y[i]);
                     // make more rocks
                     if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
                         splitRock(i);
@@ -920,28 +935,19 @@ void createEnemies()
 
 static void createExplosions()
 {
-    fix16 xpos = FIX16(0);
+    fix16 xpos = FIX16(-16);
     fix16 ypos = FIX16(264);
-
     for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
     {
-        /*
-           explosions[i].pos_x = xpos;
-           explosions[i].pos_y = ypos;
-           explosions[i].vel_x = FIX16(0);
-           explosions[i].vel_y = FIX16(0);
-           explosions[i].active = FALSE;
-           explosions[i].hitbox_x1 = FIX16(0);
-           explosions[i].hitbox_y1 = FIX16(0);
-           explosions[i].hitbox_x2 = FIX16(0);
-           explosions[i].hitbox_y2 = FIX16(0);
+        explosion_pos_x[i] = xpos;
+        explosion_pos_y[i] = ypos;
+        explosion_ticks[i] = 0;
+        explosion_live[i] = FALSE;
 
-           explosions[i].sprite = SPR_addSprite(&explosion, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR(PAL0, 0, FALSE, FALSE));
-           SPR_setAnim(explosions[i].sprite, i % 4);
-
-           SPR_setVisibility(explosions[i].sprite, HIDDEN);
-           SPR_setDepth(explosions[i].sprite, SPR_MIN_DEPTH);
-           */
+        explosion_sprites[i] = SPR_addSprite(&explosion, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR(PAL0, 0, FALSE, FALSE));
+        SPR_setAnim(explosion_sprites[i], i % 4);
+        SPR_setVisibility(explosion_sprites[i], HIDDEN);
+        SPR_setDepth(explosion_sprites[i], SPR_MIN_DEPTH);
     }
 }
 
@@ -1019,7 +1025,7 @@ int main(bool hard)
 
 
     createPlayerShots();
-    //createExplosions();
+    createExplosions();
     //createRocks(MAX_ROCKS);
     createRocks(10);
     //createEnemies();
