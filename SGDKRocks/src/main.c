@@ -26,14 +26,21 @@
 // Define enemy constants
 
 #define MAX_OBJECTS         45
-// leave 8 of the objs for UFOs and player shots  ( 4 player shots, 2 UFOS, and 2 ufo shots )
-#define MAX_ROCKS           37
+// leave 7 of the objs for UFOs and player shots  ( 4 player shots, 1 UFOS, and 2 ufo shots )
+#define MAX_ROCKS           38
 #define MAX_EXPLOSIONS      5
 
-#define UFO_SLOT            37
+#define UFO_SLOT            38
 
-#define UFO_SPAWN_TIME  0x02f8
+//#define UFO_SPAWN_TIME  0x02f8
+#define UFO_SPAWN_TIME  0x01f8
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// Define UFO vals
 static u16 ufoTick = 0; 
+fix16 ufoShotX[64];
+fix16 ufoShotY[64];
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -57,7 +64,7 @@ s16 camPosX; // relative to total world map
 s16 camPosY; // relative to total world map
 
 static u8 tick = 0; // just a commn tick for everyone to use
-
+static u8 level = 1;
 /////////////////////////////////////////////////////////////////////////////////
 // Moving Objs variables
 Sprite *obj_sprites[MAX_OBJECTS];
@@ -73,20 +80,18 @@ bool obj_live[MAX_OBJECTS];
 #define PLAYER 1
 #define PLAYER_SHOT 3
 
-#define ROCK 20
-#define MID_ROCK 50
-#define SMALL_ROCK 75
-#define UFO 200
-#define SMALL_UFO 400
-#define STAR 150 
-#define SHARD 350 
+#define ROCK 10
+#define MID_ROCK 25
+#define SMALL_ROCK 50
+#define UFO 100
+#define SMALL_UFO 200
+#define STAR 75 
+#define SHARD 150 
 
 u8 obj_type[MAX_OBJECTS];
 
 /////////////////////////////////////////////////////////////////////////////////
 // player variables
-
-
 // Asteroids used 8-bits for angles  0 though 255
 // I have fewer sprite frames than 256, but can reuse frames for similar angles.
 fix16 thrustX[256];
@@ -105,8 +110,6 @@ fix16 ship_pos_y = FIX16(0.0);
 const fix16 max_speed = FIX16(5.5);
 fix16 max_speed_x[256];
 fix16 max_speed_y[256];
-const s16 playfield_width = 320;
-const s16 playfield_height = 224;
 Sprite *blink_sprite;
 static u8 prevBlinkState = 0;
 static u8 currBlinkState = 0;
@@ -391,10 +394,144 @@ void handleInput()
 }
 
 void createUfo( )  {
+    // start on one side
+    obj_type[UFO_SLOT] = UFO;
+    f16 vel = FIX16(0.5);
+
+    obj_hit_w[UFO_SLOT] = FIX16(28);
+    if( level > 3 ) {
+        if(  random() % 3 == 0 )  {
+            obj_type[UFO_SLOT] = SMALL_UFO;
+        }
+    }else if( level > 5 ) {
+        if(  random() % 2 == 0 )  {
+            obj_type[UFO_SLOT] = SMALL_UFO;
+        }
+    }else if( level > 8 ) {
+        if(  random() % 3 > 0 )  {
+            obj_type[UFO_SLOT] = SMALL_UFO;
+        }
+    }else if( level > 12 ) {
+        obj_type[UFO_SLOT] = SMALL_UFO; 
+    }
+    if( obj_type[UFO_SLOT] == SMALL_UFO ) {
+        vel = FIX16(1.0);
+        obj_hit_w[UFO_SLOT] = FIX16(12);
+    }
+
+
+    // start at same Y as ship
+    obj_pos_y[UFO_SLOT]= ship_pos_y;
+     
+    if(  random() % 2 == 0 ) {
+        // go left to right
+        obj_speed_x[UFO_SLOT] = vel;
+        obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(224);
+    } else {
+        // right to left
+        obj_speed_x[UFO_SLOT] = -vel;
+        obj_pos_x[UFO_SLOT]= ship_pos_x + FIX16(224);
+    }
+
+    //obj_speed_y[UFO_SLOT] = fix16Mul(vel, thrustY[rot]);
+
+    obj_live[UFO_SLOT] = TRUE;
+
+    // it'l lmove where it needs to in game loop.
+    obj_sprites[UFO_SLOT] = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    SPR_setAnim(obj_sprites[UFO_SLOT], 0);
+
+
 }
 
-void aimUfoShot()  {
+
+void fireUfoShot() {
+    u8 shotDir = 0;
+    if( obj_type[UFO_SLOT] == UFO ) {
+        shotDir = random();
+    } else if ( obj_type[UFO_SLOT] == SMALL_UFO ) {
+        // find relative position of ship to UFO
+        fix16 deltaX = obj_pos_x[UFO_SLOT] - ship_pos_x;
+        fix16 deltaY = obj_pos_y[UFO_SLOT] - ship_pos_y;
+        // Handle special cases for pure vertical/horizontal
+        if (deltaX == FIX16(0)) {
+            // wi & arae
+            shotDir = (deltaY > 0) ? 0 : 32; 
+        }else if (deltaY == FIX16(0)) { 
+            // Left or Right
+            shotDir = (deltaX > 0) ? 48 : 16;  
+        } else {
+
+            // get absolute values
+            s16 absX = fix16ToInt(abs(deltaX));
+            s16 absY = fix16ToInt(abs(deltaY));
+
+            if( absX == absY ) {
+                // 45 degrees
+                if (deltaX <= 0 && deltaY >= 0) {  // remember 0,0 is upper left, so a negative Y is aiming UP
+                    shotDir = 8; // 360/64 -> 5.625  and 8 * 5.625 = 45 degrees
+                } else if (deltaX <= 0 && deltaY <= 0) {
+                    shotDir = 24; 
+                } else if (deltaX > 0 && deltaY < 0) {
+                    shotDir = 40; 
+                } else {
+                    shotDir = 56; 
+                }
+
+            } else {
+                // Binary search approximation (4 bits for 16 angles per quadrant)
+                bool swap = FALSE;
+                // swap if we must
+                if( absX > absY ) {
+                    swap = TRUE;
+                    s16 temp = absX;
+                    absX = absY;
+                    absY = temp;
+                }
+
+                // loop up to 4 times.
+                u8 index = 16;
+                for (u8 i = 0; i < 4; i++) {
+                    if (absX < absY) {
+                        index >>=1;
+                    } else if ( absX == absY )  {
+                        index >>=1;
+                       break;
+                    } else {
+                        absX = absX - absY;
+                        index |=1; // add current bit
+                    }
+                    absY >>=1; // she's gotta halve it
+                }
+                shotDir = index & 0x0F; // limit index to 16 values.
+                if(swap) {
+                    shotDir = 16 - shotDir;      
+                }
+                // Adjust for the quadrant
+                /*if (deltaX <= 0 && deltaY >= 0) {  // remember 0,0 is upper left, so a negative Y is aiming UP
+                } else*/ if (deltaX <= 0 && deltaY <= 0) {
+                    // LR Quadrant 
+                    shotDir = 32 - shotDir;
+                } else if (deltaX > 0 && deltaY < 0) {
+                    // LL Quadrant 
+                    shotDir = 32 + shotDir;
+                } else {
+                    // UL Quadrant 
+                    shotDir = 48 + (15 - shotDir);
+                }
+            }
+        }
+
+    }
+    // spawn a shot
+   
+    
+
 }
+
+
+
+
 
 void updateUfo() 
 {
@@ -425,143 +562,27 @@ void updateUfo()
         return;
     } else {
         // do motion
-        // randomly change Y veolcity every 128 frames
-        if (ufoTick % 0x03 ) {
+        // change Y veolcity every ? frames if near player
+        if ( ufoTick % 60 == 0 ) {
+
+            u8 rot = random();
+            obj_speed_y[UFO_SLOT] = fix16Mul(FIX16(4.0), thrustY[rot]);
+            if(  (obj_pos_y[UFO_SLOT] - ship_pos_y ) < FIX16(50.0) ) {
+                if( obj_speed_y[UFO_SLOT] < FIX16(0.0) ) {
+                    obj_speed_y[UFO_SLOT] =  - obj_speed_y[UFO_SLOT];
+                }
+            } else if(  (obj_pos_y[UFO_SLOT] - ship_pos_y ) > FIX16(50.0) ) {
+                if( obj_speed_y[UFO_SLOT] > FIX16(0.0) ) {
+                    obj_speed_y[UFO_SLOT] =  - obj_speed_y[UFO_SLOT];
+                }
+            }
         }
+        if ( ufoTick % 40 == 0 ) {
+            // fire shot
+            fireUfoShot();
+        }
+
     }
-
-
-    /*
-       Big saucers shoot randomly
-
-
-6c5c: 4a                           lsr     A                       ;If its a large saucer, prepare to shoot a random shot
-6c5d: f0 06                        beq     GetScrShpDistance       ;If its a small saucer, prepare to shoot an aimed shot
-6c5f: 20 b5 77                     jsr     GetRandNum              ;Get a random number
-6c62: 4c c2 6c                     jmp     ScrShoot                ;Prepare to generate a saucer bullet
-*/
-
-
-
-
-    /*
-       They randomly vary Y velocity 
-6c34: a5 5c        ScrYVelocity    lda     FrameTimer              ;Randomly change saucer Y velocity every 128 frames
-6c36: 0a                           asl     A                       ;Is it time to change the saucer's Y velocity?
-6c37: d0 0c                        bne     ChkScrUpdate            ;If not, branch
-6c39: 20 b5 77                     jsr     GetRandNum              ;Get a random number
-6c3c: 29 03                        and     #%00000011              ;Keep the lower 2 bits for index into table below
-
-6c3f: bd d1 6c                     lda     ScrYSpeedTbl,x          ;Load new Y velocity value for the saucer
-6c42: 8d 62 02                     sta     SaucerYSpeed
-*/
-
-    /* 
-       small ufo aim
-
-6c92: ad ed 02                     lda     ShipYPosLo
-6c95: 38                           sec                             ;Get difference between saucer and ship X position low byte
-6c96: ed ee 02                     sbc     ScrYPosLo
-6c99: 85 0b                        sta     GenByte0B               ;Save result
-6c9b: ad a7 02                     lda     ShipYPosHi              ;Get difference between saucer and ship X position high byte
-6c9e: ed a8 02                     sbc     ScrYPosHi
-6ca1: 20 ec 77                     jsr     NextScrShpDist          ;Calculate next frame saucer/ship Y distance
-6ca4: a8                           tay                             ;Save Y distance data for bullet
-; 
-6ca5: 20 f0 76                     jsr     CalcScrShotDir          ;Calculate the small saucer's shot direction
-*/
-
-
-    /*
-       They anticipate next distance for small saucer shots
-
-77ec: 06 0b        NextScrShpDist  asl     GenByte0B
-77ee: 2a                           rol     A                       ;Get the signed difference between
-77ef: 06 0b                        asl     GenByte0B               ; the ship and saucer upper 4 bits
-77f1: 2a                           rol     A
-77f2: 38                           sec                             ;Predict next location of saucer with respect to the ship
-77f3: e5 0c                        sbc     GenByte0C               ; by subtracting the current saucer XY velocity from the
-77f5: 60                           rts                             ; from the saucer/ship distance
-*/
-
-
-    /* 
-     * actual shot angle is based on x and y distances
-
-     ; 
-     ; Calculate small saucer shot velocity.
-     ; 
-76f0: 98           CalcScrShotDir  tya                             ;Load the Y distance between the saucer and the ship
-76f1: 10 09                        bpl     ScrShotXDir             ;Is Y direction positive? If so, branch to do X direction
-76f3: 20 08 77                     jsr     TwosCompliment          ;Calculate the 2's compliment of the Y distance
-76f6: 20 fc 76                     jsr     ScrShotXDir             ;Calculate the X direction of the saucer shot
-76f9: 4c 08 77                     jmp     TwosCompliment          ;Calculate the 2's compliment of the value in A
-
-76fc: a8           ScrShotXDir     tay                             ;Save the modified Y shot distance
-76fd: 8a                           txa                             ;Get the the raw X shot distance
-76fe: 10 0e                        bpl     CalcScrShotAngle        ;Is X direction positive? If so, branch to calculate shot angle
-7700: 20 08 77                     jsr     TwosCompliment          ;Calculate the 2's compliment of the value in A
-7703: 20 0e 77                     jsr     CalcScrShotAngle        ;Calculate the small saucer's shot angle
-7706: 49 80                        eor     #$80                    ;Set the appropriate quadrant for the bullet
-; 
-; 2's compliment.
-; 
-7708: 49 ff        TwosCompliment  eor     #$ff
-770a: 18                           clc                             ;Calculate the 2's compliment of the value in A
-770b: 69 01                        adc     #$01
-770d: 60                           rts
-
-; 
-; Calculate small saucer shot angle.
-; 
-• Clear variables
-]ShotXYDistance .var    $0c    {addr/1}
-
-CalcScrShotAngle
-770e: 85 0c                        sta     ]ShotXYDistance         ;Store shot modified X distance
-7710: 98                           tya
-7711: c5 0c                        cmp     ]ShotXYDistance         ;Is X and Y distance the same?
-7713: f0 10                        beq     ShotAngle45             ;If so, angle is 45 degrees.  Branch to set and exit
-7715: 90 11                        bcc     LookUpAngle             ;Is angle in lower 45 degrees of quadrant? if so, branch
-7717: a4 0c                        ldy     ]ShotXYDistance         ;Swap X and Y components as the shot is
-7719: 85 0c                        sta     ]ShotXYDistance         ; in the upper 45 degrees of the quadrant
-771b: 98                           tya
-771c: 20 28 77                     jsr     LookUpAngle             ;Look up angle but return to find proper quadrant
-771f: 38                           sec                             ;Set the appropriate quadrant for the bullet
-7720: e9 40                        sbc     #$40
-7722: 4c 08 77                     jmp     TwosCompliment          ;Calculate the 2's compliment of the value in A
-
-7725: a9 20        ShotAngle45     lda     #$20                    ;Player's ship is at a 45 degree angle to the saucer
-7727: 60                           rts
-
-7728: 20 6c 77     LookUpAngle     jsr     FindScrAngleIndex       ;Find the index in the table below for the shot angle
-772b: bd 2f 77                     lda     ShotAngleTbl,x
-772e: 60                           rts                             ;Look up the proper angle and exit
-
-; 
-; The following table divides 45 degrees of a circle into 16 pieces.  Its used
-; to calculate the direction of a bullet from a small saucer to the player's
-; ship.  The other angles in the circle are derived from this table.
-; 
-772f: 00 02 05 07+ ShotAngleTbl    .bulk   $00,$02,$05,$07,$0a,$0c,$0f,$11,$13,$15,$17,$19,$1a,$1c,$1d,$1f 
-*/
-
-
-
-    /*
-       if score is lower than 35000 they add a small inaccuracy to the saucer shot
-
-6ca8: 85 62                        sta     ScrBulletDir            ;Saucer shot direction is the same type of data as ship direction
-6caa: 20 b5 77                     jsr     GetRandNum              ;Get a random number
-6cad: a6 19                        ldx     ScoreIndex
-6caf: b4 53                        ldy     PlayerScores+1,x        ;Is the player's score less than 35,000?
-6cb1: c0 35                        cpy     #$35                    ;If so, add inaccuracy to small saucer's bullet
-6cb3: a2 00                        ldx     #$00
-*/
-
-
-
-
 
 }
 
@@ -950,6 +971,9 @@ int main(bool hard)
     /////////////////////////////////////////////////////////////////////////////////
     // Setup Thrust Table
     u16 pos = 0;
+    // Starting with UP just because I drew the ship that way.
+    // start at PI/2 and procede clockwise
+    //   in FIX16 90 degrees is at 256  ( 1/4 1024)
     for( s16 i = 64; i >= 0; i-- ) {
         thrustX[pos] =  fix16Div( cosFix16(i * 4), FIX16(5));
         max_speed_x[pos] = fix16Mul( max_speed, cosFix16(i*4));
@@ -969,6 +993,20 @@ int main(bool hard)
         pos++;
     }
 
+    /////////////////////////////////////////////////////////////////////////////////
+    // Setup UFO Shot Table (64 slots)
+    // starting with UP to match ship directions
+    pos = 0;
+    for( s16 i = 16; i >= 0; i-- ) {
+        ufoShotX[pos] =  fix16Div( cosFix16(i * 16), FIX16(5));
+        ufoShotY[pos] = -fix16Div( sinFix16(i * 16), FIX16(5)); 
+        pos++;
+    }
+    for( s16 i = 63; i > 16; i-- ) {
+        ufoShotX[pos] =  fix16Div( cosFix16(i * 16), FIX16(5));
+        ufoShotY[pos] = -fix16Div( sinFix16(i * 16), FIX16(5));  
+        pos++;
+    }
 
 
     /////////////////////////////////////////////////////////////////////////////////
@@ -1079,7 +1117,6 @@ int main(bool hard)
         VDP_drawText(message, 1,7 );
         */
 
-        // check UFO every 4th frame (b00000011)
         updateUfo();
 
         // move sprites
