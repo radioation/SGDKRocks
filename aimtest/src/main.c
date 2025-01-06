@@ -133,13 +133,13 @@ int main(bool hard)
     // starting with UP to match ship directions
     u16 pos = 0;
     for( s16 i = 16; i >= 0; i-- ) {
-        ufoShotX[pos] =  fix16Div( cosFix16(i * 16), FIX16(5));
-        ufoShotY[pos] = -fix16Div( sinFix16(i * 16), FIX16(5)); 
+        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(5));
+        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(5)); 
         pos++;
     }
     for( s16 i = 63; i > 16; i-- ) {
-        ufoShotX[pos] =  fix16Div( cosFix16(i * 16), FIX16(5));
-        ufoShotY[pos] = -fix16Div( sinFix16(i * 16), FIX16(5));  
+        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(5));
+        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(5));  
         pos++;
     }
 
@@ -185,8 +185,7 @@ int main(bool hard)
     fireUfoShot(); // expect 56
 */
 
-/*
-    // upper right
+    // ship to upper right
     obj_pos_x[UFO_SLOT] = FIX16(99);
     obj_pos_y[UFO_SLOT] = FIX16(110);
     fireUfoShot(); 
@@ -222,7 +221,6 @@ int main(bool hard)
     obj_pos_x[UFO_SLOT] = FIX16(94);
     obj_pos_y[UFO_SLOT] = FIX16(102);
     fireUfoShot(); 
-*/
 
 /* 
     // lower right
@@ -286,6 +284,7 @@ int main(bool hard)
     obj_pos_y[UFO_SLOT] = FIX16(98);
     fireUfoShot(); 
 */
+/*
     // to upper left
     obj_pos_x[UFO_SLOT] = FIX16(101);
     obj_pos_y[UFO_SLOT] = FIX16(110);
@@ -313,7 +312,36 @@ int main(bool hard)
 
     obj_pos_x[UFO_SLOT] = FIX16(106);
     obj_pos_y[UFO_SLOT] = FIX16(102);
+*/
+/*
+    obj_pos_x[UFO_SLOT] = FIX16(102);
+    obj_pos_y[UFO_SLOT] = FIX16(110);
+    fireUfoShot(); 
 
+    obj_pos_x[UFO_SLOT] = FIX16(104);
+    obj_pos_y[UFO_SLOT] = FIX16(120);
+    fireUfoShot(); 
+
+    obj_pos_x[UFO_SLOT] = FIX16(116);
+    obj_pos_y[UFO_SLOT] = FIX16(180);
+    fireUfoShot(); 
+
+    obj_pos_x[UFO_SLOT] = FIX16(108);
+    obj_pos_y[UFO_SLOT] = FIX16(102);
+    fireUfoShot(); 
+
+    obj_pos_x[UFO_SLOT] = FIX16(124);
+    obj_pos_y[UFO_SLOT] = FIX16(106);
+    fireUfoShot(); 
+
+    obj_pos_x[UFO_SLOT] = FIX16(148);
+    obj_pos_y[UFO_SLOT] = FIX16(112);
+    fireUfoShot(); 
+
+    obj_pos_x[UFO_SLOT] = FIX16(350);
+    obj_pos_y[UFO_SLOT] = FIX16(190);
+    fireUfoShot(); 
+*/
 
     while(TRUE)
     {

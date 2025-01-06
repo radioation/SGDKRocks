@@ -19,7 +19,7 @@
 #define SHOT_OFFSET_X       8 
 #define SHOT_OFFSET_Y       8 
 #define MAX_PLAYER_SHOTS    4
-#define PLAYER_SHOT_TIME    42  
+#define PLAYER_SHOT_TIME    50  
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@
 #define UFO_SLOT            38
 
 //#define UFO_SPAWN_TIME  0x02f8
-#define UFO_SPAWN_TIME  0x01f8
+#define UFO_SPAWN_TIME  250
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -397,7 +397,7 @@ void createUfo( )  {
     // start on one side
     obj_type[UFO_SLOT] = UFO;
     f16 vel = FIX16(0.5);
-
+    level = 15;
     obj_hit_w[UFO_SLOT] = FIX16(28);
     if( level > 3 ) {
         if(  random() % 3 == 0 )  {
@@ -414,6 +414,8 @@ void createUfo( )  {
     }else if( level > 12 ) {
         obj_type[UFO_SLOT] = SMALL_UFO; 
     }
+
+
     if( obj_type[UFO_SLOT] == SMALL_UFO ) {
         vel = FIX16(1.0);
         obj_hit_w[UFO_SLOT] = FIX16(12);
@@ -435,10 +437,17 @@ void createUfo( )  {
 
     //obj_speed_y[UFO_SLOT] = fix16Mul(vel, thrustY[rot]);
 
+    obj_type[UFO_SLOT] = SMALL_UFO;
+        obj_speed_x[UFO_SLOT] = FIX16(0);
+        obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(50);
+        obj_speed_y[UFO_SLOT] = FIX16(0);
+        obj_pos_y[UFO_SLOT]= ship_pos_y - FIX16(60);
+
     obj_live[UFO_SLOT] = TRUE;
 
     // it'l lmove where it needs to in game loop.
-    obj_sprites[UFO_SLOT] = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    //obj_sprites[UFO_SLOT] = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    obj_sprites[UFO_SLOT] = SPR_addSprite(&small_ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     SPR_setAnim(obj_sprites[UFO_SLOT], 0);
 
 
@@ -447,12 +456,20 @@ void createUfo( )  {
 
 void fireUfoShot() {
     u8 shotDir = 0;
+            char msg[40];
     if( obj_type[UFO_SLOT] == UFO ) {
-        shotDir = random();
+        shotDir = random() & 0x2F;
     } else if ( obj_type[UFO_SLOT] == SMALL_UFO ) {
+            VDP_drawText("SMALL", 2,1);
         // find relative position of ship to UFO
         fix16 deltaX = obj_pos_x[UFO_SLOT] - ship_pos_x;
         fix16 deltaY = obj_pos_y[UFO_SLOT] - ship_pos_y;
+            char dltX[10];
+            fix16ToStr( deltaX, dltX, 4 );
+            char dltY[10];
+            fix16ToStr( deltaY, dltY, 4 );
+            sprintf( msg, "dx: %s dy: %s i: %d   !  ", dltX, dltY, shotDir);
+            VDP_drawText(msg, 2,2);
         // Handle special cases for pure vertical/horizontal
         if (deltaX == FIX16(0)) {
             // wi & arae
@@ -465,6 +482,7 @@ void fireUfoShot() {
             // get absolute values
             s16 absX = fix16ToInt(abs(deltaX));
             s16 absY = fix16ToInt(abs(deltaY));
+
 
             if( absX == absY ) {
                 // 45 degrees
@@ -504,6 +522,8 @@ void fireUfoShot() {
                     absY >>=1; // she's gotta halve it
                 }
                 shotDir = index & 0x0F; // limit index to 16 values.
+            sprintf( msg, "ax: %d ay: %d i: %d  ", absX, absY, shotDir );
+            VDP_drawText(msg, 2, 3 );
                 if(swap) {
                     shotDir = 16 - shotDir;      
                 }
@@ -515,7 +535,7 @@ void fireUfoShot() {
                 } else if (deltaX > 0 && deltaY < 0) {
                     // LL Quadrant 
                     shotDir = 32 + shotDir;
-                } else {
+                } else if( deltaX > 0 && deltaY > 0){
                     // UL Quadrant 
                     shotDir = 48 + (15 - shotDir);
                 }
@@ -530,11 +550,17 @@ void fireUfoShot() {
         {
             // create a new one
             XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
+            char objX[10];
+            fix16ToStr( ufoShotX[shotDir], objX, 4 );
+            char objY[10];
+            fix16ToStr( ufoShotY[shotDir], objY, 4 );
+            sprintf( msg, "x: %s y: %s i: %d   !  ", objX, objY, shotDir);
+            VDP_drawText(msg, 2,4);
 
             obj_pos_x[i] = obj_pos_x[UFO_SLOT] + FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
             obj_pos_y[i] = obj_pos_y[UFO_SLOT] + FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
-            obj_speed_x[i] = obj_speed_x[UFO_SLOT] + (ufoShotX[shotDir]  );
-            obj_speed_y[i] = obj_speed_y[UFO_SLOT] + (ufoShotY[shotDir]  );
+            obj_speed_x[i] = obj_speed_x[UFO_SLOT] + (ufoShotX[shotDir] );
+            obj_speed_y[i] = obj_speed_y[UFO_SLOT] + (ufoShotY[shotDir] );
             obj_live[i] = TRUE;
             obj_ticks[i] = 0; // you do need this.
             break;
@@ -551,23 +577,6 @@ void fireUfoShot() {
 
 void updateUfo() 
 {
-    // some pieces of real asteroids
-
-    // 
-
-
-    /*  They only updated every 4 frames
-6b93: a5 5c        UpdateScr       lda     FrameTimer              ;Update saucers only every 4th frame
-6b95: 29 03                        and     #$03                    ;Is this the 4th frame?
-6b97: f0 01                        beq     ChkScrExplode           ;If so, branch to continue processing 
-*/
-
-    /*
-       They used a timer, duh
-6bb7: ce f7 02     UpdateScrTimer  dec     ScrTimer                ;Is it time to re-spawn a saucer?
-6bba: d0 dd                        bne     EndUpdateScr            ;If not, branch to exit
-
-*/
     ufoTick++; 
     if( obj_live[UFO_SLOT] == FALSE ) {
         if( ufoTick >= UFO_SPAWN_TIME ) {
@@ -580,7 +589,7 @@ void updateUfo()
         // do motion
         // change Y veolcity every ? frames if near player
         if ( ufoTick % 60 == 0 ) {
-
+/*
             u8 rot = random();
             obj_speed_y[UFO_SLOT] = fix16Mul(FIX16(4.0), thrustY[rot]);
             if(  (obj_pos_y[UFO_SLOT] - ship_pos_y ) < FIX16(50.0) ) {
@@ -592,6 +601,7 @@ void updateUfo()
                     obj_speed_y[UFO_SLOT] =  - obj_speed_y[UFO_SLOT];
                 }
             }
+*/
         }
         if ( ufoTick % 120 == 0 ) {
             // fire shot
@@ -634,14 +644,14 @@ void update()
             }
         }
     }
-/*
-    for (u16 i = UFO_SLOT + 1;  i <  MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
-    {
-        if (obj_live[i] == FALSE)
-        {
-        }
-    }
-*/
+    /*
+       for (u16 i = UFO_SLOT + 1;  i <  MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
+       {
+       if (obj_live[i] == FALSE)
+       {
+       }
+       }
+       */
 
     // update non-players objects.
     for (u16 i = 0; i < MAX_OBJECTS; ++i)
@@ -1041,13 +1051,13 @@ int main(bool hard)
     // starting with UP to match ship directions
     pos = 0;
     for( s16 i = 16; i >= 0; i-- ) {
-        ufoShotX[pos] =  fix16Div( cosFix16(i * 16), FIX16(5));
-        ufoShotY[pos] = -fix16Div( sinFix16(i * 16), FIX16(5)); 
+        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(3));
+        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(3)); 
         pos++;
     }
     for( s16 i = 63; i > 16; i-- ) {
-        ufoShotX[pos] =  fix16Div( cosFix16(i * 16), FIX16(5));
-        ufoShotY[pos] = -fix16Div( sinFix16(i * 16), FIX16(5));  
+        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(3));
+        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(3));  
         pos++;
     }
 
