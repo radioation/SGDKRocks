@@ -33,7 +33,7 @@
 #define UFO_SLOT            38
 
 //#define UFO_SPAWN_TIME  0x02f8
-#define UFO_SPAWN_TIME  250
+#define UFO_SPAWN_TIME  300
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -65,6 +65,7 @@ s16 camPosY; // relative to total world map
 
 static u8 tick = 0; // just a commn tick for everyone to use
 static u8 level = 1;
+
 /////////////////////////////////////////////////////////////////////////////////
 // Moving Objs variables
 Sprite *obj_sprites[MAX_OBJECTS];
@@ -107,7 +108,7 @@ fix16 ship_speed_x = FIX16(0.0);
 fix16 ship_speed_y = FIX16(0.0);
 fix16 ship_pos_x = FIX16(0.0);
 fix16 ship_pos_y = FIX16(0.0);
-const fix16 max_speed = FIX16(5.5);
+const fix16 max_speed = FIX16(4.5);
 fix16 max_speed_x[256];
 fix16 max_speed_y[256];
 Sprite *blink_sprite;
@@ -116,7 +117,6 @@ static u8 currBlinkState = 0;
 static bool isBlinkDown = FALSE;
 fix16 ship_blink_pos_x = FIX16(0.0);
 fix16 ship_blink_pos_y = FIX16(0.0);
-
 
 /////////////////////////////////////////////////////////////////////////////////
 // explosions
@@ -239,7 +239,7 @@ void updateCameraPos()
 void inputCallback(u16 joy, u16 changed, u16 state)
 {
     // create a shot if available
-    if (changed & state & BUTTON_A)
+    if (changed & state & BUTTON_A && !isBlinkDown)
     {
         for (s16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
         {
@@ -300,7 +300,7 @@ void handleInput()
 
     if( tick & 0x01 ) {
         // check thrust every other frame.
-        if (currState & BUTTON_UP)
+        if (currState & BUTTON_UP && !isBlinkDown)
         {
             // thrust
             //ship_accel_x += (thrustX[shipDir] >> 2);
@@ -397,28 +397,31 @@ void createUfo( )  {
     // start on one side
     obj_type[UFO_SLOT] = UFO;
     f16 vel = FIX16(0.5);
-    level = 15;
+    level = 6;
     obj_hit_w[UFO_SLOT] = FIX16(28);
-    if( level > 3 ) {
-        if(  random() % 3 == 0 )  {
+    if( level > 12 ) {
+        obj_type[UFO_SLOT] = SMALL_UFO; 
+    }else if( level > 8 ) {
+        if(  random() % 4 > 0 )  {
             obj_type[UFO_SLOT] = SMALL_UFO;
         }
     }else if( level > 5 ) {
-        if(  random() % 2 == 0 )  {
+        if(  random() % 4 > 1 )  {
             obj_type[UFO_SLOT] = SMALL_UFO;
         }
-    }else if( level > 8 ) {
-        if(  random() % 3 > 0 )  {
+    }else if( level > 3 ) {
+        if(  random() % 4 > 3 )  {
             obj_type[UFO_SLOT] = SMALL_UFO;
         }
-    }else if( level > 12 ) {
-        obj_type[UFO_SLOT] = SMALL_UFO; 
     }
 
 
     if( obj_type[UFO_SLOT] == SMALL_UFO ) {
         vel = FIX16(1.0);
         obj_hit_w[UFO_SLOT] = FIX16(12);
+        obj_sprites[UFO_SLOT] = SPR_addSprite(&small_ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    } else {
+       obj_sprites[UFO_SLOT] = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     }
 
 
@@ -435,41 +438,29 @@ void createUfo( )  {
         obj_pos_x[UFO_SLOT]= ship_pos_x + FIX16(224);
     }
 
-    //obj_speed_y[UFO_SLOT] = fix16Mul(vel, thrustY[rot]);
-
+    /*
     obj_type[UFO_SLOT] = SMALL_UFO;
         obj_speed_x[UFO_SLOT] = FIX16(0);
         obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(50);
         obj_speed_y[UFO_SLOT] = FIX16(0);
         obj_pos_y[UFO_SLOT]= ship_pos_y - FIX16(60);
-
+*/
     obj_live[UFO_SLOT] = TRUE;
-
-    // it'l lmove where it needs to in game loop.
-    //obj_sprites[UFO_SLOT] = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-    obj_sprites[UFO_SLOT] = SPR_addSprite(&small_ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    
     SPR_setAnim(obj_sprites[UFO_SLOT], 0);
-
-
 }
 
 
 void fireUfoShot() {
     u8 shotDir = 0;
-            char msg[40];
+    char msg[40];
     if( obj_type[UFO_SLOT] == UFO ) {
         shotDir = random() & 0x2F;
     } else if ( obj_type[UFO_SLOT] == SMALL_UFO ) {
-            VDP_drawText("SMALL", 2,1);
         // find relative position of ship to UFO
         fix16 deltaX = obj_pos_x[UFO_SLOT] - ship_pos_x;
         fix16 deltaY = obj_pos_y[UFO_SLOT] - ship_pos_y;
-            char dltX[10];
-            fix16ToStr( deltaX, dltX, 4 );
-            char dltY[10];
-            fix16ToStr( deltaY, dltY, 4 );
-            sprintf( msg, "dx: %s dy: %s i: %d   !  ", dltX, dltY, shotDir);
-            VDP_drawText(msg, 2,2);
+
         // Handle special cases for pure vertical/horizontal
         if (deltaX == FIX16(0)) {
             // wi & arae
@@ -514,7 +505,7 @@ void fireUfoShot() {
                         index >>=1;
                     } else if ( absX == absY )  {
                         index >>=1;
-                       break;
+                        break;
                     } else {
                         absX = absX - absY;
                         index |=1; // add current bit
@@ -522,23 +513,22 @@ void fireUfoShot() {
                     absY >>=1; // she's gotta halve it
                 }
                 shotDir = index & 0x0F; // limit index to 16 values.
-            sprintf( msg, "ax: %d ay: %d i: %d  ", absX, absY, shotDir );
-            VDP_drawText(msg, 2, 3 );
+
                 if(swap) {
                     shotDir = 16 - shotDir;      
                 }
                 // Adjust for the quadrant
                 /*if (deltaX <= 0 && deltaY >= 0) {  // remember 0,0 is upper left, so a negative Y is aiming UP
-                } else*/ if (deltaX <= 0 && deltaY <= 0) {
-                    // LR Quadrant 
-                    shotDir = 32 - shotDir;
-                } else if (deltaX > 0 && deltaY < 0) {
-                    // LL Quadrant 
-                    shotDir = 32 + shotDir;
-                } else if( deltaX > 0 && deltaY > 0){
-                    // UL Quadrant 
-                    shotDir = 48 + (15 - shotDir);
-                }
+                  } else*/ if (deltaX <= 0 && deltaY <= 0) {
+                      // LR Quadrant 
+                      shotDir = 32 - shotDir;
+                  } else if (deltaX > 0 && deltaY < 0) {
+                      // LL Quadrant 
+                      shotDir = 32 + shotDir;
+                  } else if( deltaX > 0 && deltaY > 0){
+                      // UL Quadrant 
+                      shotDir = 48 + (15 - shotDir);
+                  }
             }
         }
 
@@ -550,12 +540,6 @@ void fireUfoShot() {
         {
             // create a new one
             XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
-            char objX[10];
-            fix16ToStr( ufoShotX[shotDir], objX, 4 );
-            char objY[10];
-            fix16ToStr( ufoShotY[shotDir], objY, 4 );
-            sprintf( msg, "x: %s y: %s i: %d   !  ", objX, objY, shotDir);
-            VDP_drawText(msg, 2,4);
 
             obj_pos_x[i] = obj_pos_x[UFO_SLOT] + FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
             obj_pos_y[i] = obj_pos_y[UFO_SLOT] + FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
@@ -566,8 +550,6 @@ void fireUfoShot() {
             break;
         }
     }
-
-
 
 }
 
@@ -586,10 +568,8 @@ void updateUfo()
         }
         return;
     } else {
-        // do motion
-        // change Y veolcity every ? frames if near player
+        // change Y veolcity every once in a while.
         if ( ufoTick % 60 == 0 ) {
-/*
             u8 rot = random();
             obj_speed_y[UFO_SLOT] = fix16Mul(FIX16(4.0), thrustY[rot]);
             if(  (obj_pos_y[UFO_SLOT] - ship_pos_y ) < FIX16(50.0) ) {
@@ -601,10 +581,8 @@ void updateUfo()
                     obj_speed_y[UFO_SLOT] =  - obj_speed_y[UFO_SLOT];
                 }
             }
-*/
         }
         if ( ufoTick % 120 == 0 ) {
-            // fire shot
             fireUfoShot();
         }
 
@@ -766,21 +744,8 @@ void createRocks(u8 rockCount )
             fix16 x = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
             fix16 y = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
             createRock( i, ROCK, x, y );
-            /*
-               obj_pos_x[i] = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
-               obj_pos_y[i] = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
-               u8 rot = random();
-               fix16 vel = FIX16(5.0);
-               obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
-               obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
-               obj_live[i] = TRUE;
-               obj_hit_w[i] = FIX16(30);
-               obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-               SPR_setAnim(obj_sprites[i], i % 4);
-               obj_type[i] = ROCK;
-               */
         } else {
-            // clear out the rest 
+            // clear out the rest  of the rocks
             obj_pos_x[i] = FIX16(-32);
             obj_pos_y[i] = FIX16(-32);
 
@@ -910,11 +875,13 @@ static void checkCollisions()
                         (obj_pos_y[i] + obj_hit_w[i]) > (obj_pos_y[j] + FIX16(4)))
                 {
 
-
-                    // deactivate the rock
-                    SPR_releaseSprite( obj_sprites[i] );
+                    // deactivate the object
                     obj_live[i] = FALSE;
+                    // and release it
+                    SPR_releaseSprite( obj_sprites[i] );
                     //SPR_setVisibility(obj_sprites[i], HIDDEN);
+
+
                     // deactivate the shot
                     obj_live[j] = FALSE;
                     SPR_setVisibility(obj_sprites[j], HIDDEN);
@@ -924,6 +891,9 @@ static void checkCollisions()
                     // make more rocks
                     if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
                         splitRock(i);
+                    } else if (obj_type[i] == UFO || obj_type[i] == SMALL_UFO ) {
+                        // or reset UFO.
+                        ufoTick = 0;
                     }
                 }
             }
@@ -947,12 +917,7 @@ void createShots()
         obj_speed_y[i] = FIX16(0.0); 
         obj_live[i] = FALSE;
         obj_ticks[i] = 0;
-        /*
-           playerShots[i].hitbox_x1 = FIX16(3);
-           playerShots[i].hitbox_y1 = FIX16(3);
-           playerShots[i].hitbox_x2 = FIX16(4);
-           playerShots[i].hitbox_y2 = FIX16(4);
-           */
+
         obj_sprites[i] = SPR_addSprite(&shot, xpos, ypos, TILE_ATTR(PAL0, 0, FALSE, FALSE));
         SPR_setAnim(obj_sprites[i],2);
     }
@@ -964,12 +929,7 @@ void createShots()
         obj_speed_y[i] = FIX16(0.0); 
         obj_live[i] = FALSE;
         obj_ticks[i] = 0;
-        /*
-           playerShots[i].hitbox_x1 = FIX16(3);
-           playerShots[i].hitbox_y1 = FIX16(3);
-           playerShots[i].hitbox_x2 = FIX16(4);
-           playerShots[i].hitbox_y2 = FIX16(4);
-           */
+
         obj_sprites[i] = SPR_addSprite(&shot, xpos, ypos, TILE_ATTR(PAL0, 0, FALSE, FALSE));
         SPR_setAnim(obj_sprites[i],0); // blue shot
 
@@ -977,30 +937,6 @@ void createShots()
 }
 
 
-
-void createEnemies()
-{
-    /*
-       for (u16 i = 0; i < MAX_ENEMIES; ++i)
-       {
-       enemies[i].pos_x = FIX16(random() % (MAP_WIDTH - 32) + i);
-       enemies[i].pos_y = FIX16(random() % (MAP_HEIGHT - 32) + i);
-       u16 rot = random() % 16;
-       fix16 vel = FIX16(1.0);
-       enemies[i].vel_x = fix16Mul(vel, deltaX[rot]);
-       enemies[i].vel_y = fix16Mul(vel, deltaY[rot]);
-       enemies[i].active = TRUE;
-       enemies[i].hitbox_x1 = FIX16(2);
-       enemies[i].hitbox_y1 = FIX16(2);
-       enemies[i].hitbox_x2 = FIX16(30);
-       enemies[i].hitbox_y2 = FIX16(30);
-       enemies[i].hitpoints = 5;
-
-       enemies[i].sprite = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-       SPR_setAnim(enemies[i].sprite, 0);
-       }
-       */
-}
 
 static void createExplosions()
 {
@@ -1096,23 +1032,15 @@ int main(bool hard)
     SPR_setVisibility(blink_sprite, HIDDEN);
     ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
-
     //Sprite* bsprite = SPR_addSprite(&blink, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
 
-    //player.hitbox_x1 = FIX16(3);
-    //player.hitbox_y1 = FIX16(3);
-    //player.hitbox_x2 = FIX16(13);
-    //player.hitbox_y2 = FIX16(13);
-    //playerRotation = MIN_ROTATION_INDEX;
-    // playerRotation = FIX16(12);
 
 
 
     createShots();
     createExplosions();
-    //createRocks(MAX_ROCKS);
+
     createRocks(10);
-    //createEnemies();
 
     JOY_setEventHandler(&inputCallback);
 
