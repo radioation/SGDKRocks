@@ -686,7 +686,6 @@ void update()
             if (explosion_ticks[i] < 9)
             {
                 //  SPR_setFrame( explosions[i].sprite, explosions[i].ticks );
-                //SPR_setPosition(explosion_sprites[i], fix16ToInt(explosions[i].pos_x) - camPosX, fix16ToInt(explosions[i].pos_y) - camPosY);
                 SPR_setAnimAndFrame(explosion_sprites[i], i % 4, explosion_ticks[i]);
             }
             else
@@ -822,6 +821,31 @@ static void checkCollisions()
                     ufoTick = 0;
                 }
             }
+
+            // if UFO is live and  on screen, check if a rock hit it.
+            if(i < UFO_SLOT &&  obj_live[UFO_SLOT] == TRUE ) {
+                if( SPR_isVisible(obj_sprites[UFO_SLOT], false) &&
+                    (obj_pos_x[i] + FIX16(2))      <  (obj_pos_x[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
+                    (obj_pos_x[i] + obj_hit_w[i] ) >  (obj_pos_x[UFO_SLOT] + FIX16(2))      &&
+                    (obj_pos_y[i] + FIX16(2))      <  (obj_pos_y[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
+                    (obj_pos_y[i] + obj_hit_w[i])  >  (obj_pos_y[UFO_SLOT] + FIX16(2))  )
+                 {
+                     // destory both
+                    obj_live[i] = FALSE;
+                    SPR_releaseSprite( obj_sprites[i] );
+                    obj_live[UFO_SLOT] = FALSE;
+                    SPR_releaseSprite( obj_sprites[UFO_SLOT] );
+                    XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
+                    showExplosion(obj_pos_x[i], obj_pos_y[i]);
+                    if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
+                        // make more rocks 
+                        splitRock(i);
+                    } 
+                    ufoTick = 0;
+                }
+            }
+
+
             // check object is hit by player shot
             for (u8 j = MAX_OBJECTS - MAX_PLAYER_SHOTS; j < MAX_OBJECTS; ++j)
             {
@@ -997,7 +1021,7 @@ int main(bool hard)
     createShots();
     createExplosions();
 
-    createRocks(10);
+    createRocks(MAX_ROCKS);
 
     JOY_setEventHandler(&inputCallback);
 
