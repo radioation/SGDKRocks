@@ -523,9 +523,25 @@ void fireUfoShot() {
         }
 
     }
-    // spawn a shot
-   
-    
+    // spawn a shot if shot slot is available
+    for (u16 i = UFO_SLOT + 1;  i <  MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
+    {
+        if (obj_live[i] == FALSE)
+        {
+            // create a new one
+            XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
+
+            obj_pos_x[i] = obj_pos_x[UFO_SLOT] + FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
+            obj_pos_y[i] = obj_pos_y[UFO_SLOT] + FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
+            obj_speed_x[i] = obj_speed_x[UFO_SLOT] + (ufoShotX[shotDir]  );
+            obj_speed_y[i] = obj_speed_y[UFO_SLOT] + (ufoShotY[shotDir]  );
+            obj_live[i] = TRUE;
+            obj_ticks[i] = 0; // you do need this.
+            break;
+        }
+    }
+
+
 
 }
 
@@ -577,7 +593,7 @@ void updateUfo()
                 }
             }
         }
-        if ( ufoTick % 40 == 0 ) {
+        if ( ufoTick % 120 == 0 ) {
             // fire shot
             fireUfoShot();
         }
@@ -606,7 +622,8 @@ void update()
     }
 
     // deactiveate shots if they've been around too long.
-    for (u16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
+    //for (u16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
+    for (u16 i = UFO_SLOT+1; i < MAX_OBJECTS; ++i)
     {
         if (obj_live[i] == TRUE)
         {
@@ -617,6 +634,14 @@ void update()
             }
         }
     }
+/*
+    for (u16 i = UFO_SLOT + 1;  i <  MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
+    {
+        if (obj_live[i] == FALSE)
+        {
+        }
+    }
+*/
 
     // update non-players objects.
     for (u16 i = 0; i < MAX_OBJECTS; ++i)
@@ -898,7 +923,7 @@ static void checkCollisions()
 }
 
 
-void createPlayerShots()
+void createShots()
 {
     fix16 xpos = FIX16(-16);
     fix16 ypos = FIX16(-16);
@@ -920,6 +945,24 @@ void createPlayerShots()
            */
         obj_sprites[i] = SPR_addSprite(&shot, xpos, ypos, TILE_ATTR(PAL0, 0, FALSE, FALSE));
         SPR_setAnim(obj_sprites[i],2);
+    }
+    for (u16 i = UFO_SLOT + 1;  i <  MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
+    {
+        obj_pos_x[i] = xpos;
+        obj_pos_y[i] = ypos;
+        obj_speed_x[i] = FIX16(0.0); 
+        obj_speed_y[i] = FIX16(0.0); 
+        obj_live[i] = FALSE;
+        obj_ticks[i] = 0;
+        /*
+           playerShots[i].hitbox_x1 = FIX16(3);
+           playerShots[i].hitbox_y1 = FIX16(3);
+           playerShots[i].hitbox_x2 = FIX16(4);
+           playerShots[i].hitbox_y2 = FIX16(4);
+           */
+        obj_sprites[i] = SPR_addSprite(&shot, xpos, ypos, TILE_ATTR(PAL0, 0, FALSE, FALSE));
+        SPR_setAnim(obj_sprites[i],0); // blue shot
+
     }
 }
 
@@ -1055,7 +1098,7 @@ int main(bool hard)
 
 
 
-    createPlayerShots();
+    createShots();
     createExplosions();
     //createRocks(MAX_ROCKS);
     createRocks(10);
