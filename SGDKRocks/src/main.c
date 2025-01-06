@@ -112,11 +112,15 @@ const fix16 max_speed = FIX16(4.5);
 fix16 max_speed_x[256];
 fix16 max_speed_y[256];
 Sprite *blink_sprite;
-static u8 prevBlinkState = 0;
-static u8 currBlinkState = 0;
+//static u8 prevBlinkState = 0;
+//static u8 currBlinkState = 0;
 static bool isBlinkDown = FALSE;
 fix16 ship_blink_pos_x = FIX16(0.0);
 fix16 ship_blink_pos_y = FIX16(0.0);
+
+static u16 score = 0;
+static s16 lives = 3;
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // explosions
@@ -453,7 +457,6 @@ void createUfo( )  {
 
 void fireUfoShot() {
     u8 shotDir = 0;
-    char msg[40];
     if( obj_type[UFO_SLOT] == UFO ) {
         shotDir = random() & 0x2F;
     } else if ( obj_type[UFO_SLOT] == SMALL_UFO ) {
@@ -785,88 +788,43 @@ void splitRock(u16 whichRock )
 static void checkCollisions()
 {
 
-    /*
-       for (u16 i = 0; i < MAX_ENEMIES; ++i)
-       {
-       if (enemies[i].active == TRUE)
-       {
-    // check if ship has hit
-    if ((enemies[i].pos_x + enemies[i].hitbox_x1) < (ship_pos_x + player.hitbox_x2) &&
-    (enemies[i].pos_x + enemies[i].hitbox_x2) > (ship_pos_x + player.hitbox_x1) &&
-    (enemies[i].pos_y + enemies[i].hitbox_y1) < (ship_pos_y + player.hitbox_y2) &&
-    (enemies[i].pos_y + enemies[i].hitbox_y2) > (ship_pos_y + player.hitbox_y1))
-    {
-    enemies[i].hitpoints -= 1;
-    if (enemies[i].hitpoints == 0)
-    {
-    enemies[i].active = FALSE;
-    SPR_setVisibility(enemies[i].sprite, HIDDEN);
-    addExplosion(enemies[i].pos_x, enemies[i].pos_y);
-    }
-    // SPR_setVisibility( player.sprite, HIDDEN );
-    }
-
-    for (u16 j = 0; j < MAX_PLAYER_SHOTS; ++j)
-    {
-    if (
-    playerShots[j].active == TRUE &&
-    (enemies[i].pos_x + enemies[i].hitbox_x1) < (playerShots[j].pos_x + FIX16(4)) &&
-    (enemies[i].pos_x + enemies[i].hitbox_x2) > (playerShots[j].pos_x + FIX16(4)) &&
-    (enemies[i].pos_y + enemies[i].hitbox_y1) < (playerShots[j].pos_y + FIX16(4)) &&
-    (enemies[i].pos_y + enemies[i].hitbox_y2) > (playerShots[j].pos_y + FIX16(4)))
-    {
-    enemies[i].hitpoints -= 1;
-    if (enemies[i].hitpoints == 0)
-    {
-    enemies[i].active = FALSE;
-    SPR_setVisibility(enemies[i].sprite, HIDDEN);
-    }
-    playerShots[j].active = FALSE;
-    SPR_setVisibility(playerShots[j].sprite, HIDDEN);
-    addExplosion(enemies[i].pos_x, enemies[i].pos_y);
-    }
-    }
-    }
-    }
-    */
-
-
     for (u16 i = 0; i < MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
     {
         if (obj_live[i] == TRUE)
         {
-            /*
-            // check if ship has hit
-            if ((obj_pos_x[i] + FIX16(2)) < (ship_pos_x + FIX16(3) ) &&
-            (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(21) )  &&
-            (obj_pos_y[i] + FIX16(2)) < (ship_pos_y + FIX16(3) ) &&
-            (obj_pos_y[i] + obj_hit_w[i]) > (ship_pos_y + FIX16(21) ))
+            
+            // check if ship has hit by anything that wasn't a player shot
+            if ( obj_live[i] == TRUE && !isBlinkDown &&
+                    (obj_pos_x[i] + FIX16(2))      < (ship_pos_x + FIX16(21) ) &&
+                    (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(3) )  &&
+                    (obj_pos_y[i] + FIX16(2))      < (ship_pos_y + FIX16(21) ) &&
+                    (obj_pos_y[i] + obj_hit_w[i])  > (ship_pos_y + FIX16(3) ))
             {
-            obj_live[i] = FALSE;
-            SPR_setVisibility(obj_sprites[i], HIDDEN);
+                --lives;
+                // deactivate the object
+                obj_live[i] = FALSE;
+                if( i <= UFO_SLOT ) {   
+                    // release rocks or UFO since a different sprite type may occupy 
+                    // this slot later
+                    SPR_releaseSprite( obj_sprites[i] );
+                } else {
+                    // shots stay 
+                    SPR_setVisibility(obj_sprites[i], HIDDEN);
+                }
 
-            addExplosion(obj_pos_x[i], obj_pos_y[i]);
+                XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
+                showExplosion(obj_pos_x[i], obj_pos_y[i]);
+                // make more rocks
+                if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
+                    splitRock(i);
+                } else if (obj_type[i] == UFO || obj_type[i] == SMALL_UFO ) {
+                    // or reset UFO.
+                    ufoTick = 0;
+                }
             }
-            */
+            // check object is hit by player shot
             for (u8 j = MAX_OBJECTS - MAX_PLAYER_SHOTS; j < MAX_OBJECTS; ++j)
             {
-
-                /*
-                   char message[40];
-                   sprintf( message, "  check i: %d j: %d  ", i, j   );
-                   VDP_drawText(message, 1,1 );
-                   char objX[10];
-                   fix16ToStr( obj_pos_x[i], objX, 4 );
-                   char objY[10];
-                   fix16ToStr( obj_pos_y[i], objY, 4 );
-                   sprintf( message, "obj x: %s y: %s ", objX, objY);
-                   VDP_drawText(message, 1,2 );
-
-                   fix16ToStr( obj_pos_x[j], objX, 4 );
-                   fix16ToStr( obj_pos_y[j], objY, 4 );
-                   sprintf( message, "shot x: %s y: %s ", objX, objY);
-                   VDP_drawText(message, 1,3 );
-                   */
 
                 if ( obj_live[j] == TRUE &&
                         (obj_pos_x[i] + FIX16(2))     < (obj_pos_x[j] + FIX16(4)) &&
@@ -888,8 +846,9 @@ static void checkCollisions()
                     // play the sound
                     XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
                     showExplosion(obj_pos_x[i], obj_pos_y[i]);
-                    // make more rocks
+                    score += obj_type[i];
                     if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
+                        // make more rocks 
                         splitRock(i);
                     } else if (obj_type[i] == UFO || obj_type[i] == SMALL_UFO ) {
                         // or reset UFO.
@@ -940,8 +899,6 @@ void createShots()
 
 static void createExplosions()
 {
-    fix16 xpos = FIX16(-16);
-    fix16 ypos = FIX16(264);
     for (u16 i = 0; i < MAX_EXPLOSIONS; ++i)
     {
         explosion_ticks[i] = 0;
@@ -1047,6 +1004,8 @@ int main(bool hard)
     char message[40];
     while(TRUE)
     {
+        sprintf( message, "Ships: %d  Score: %d ", lives, score);
+        VDP_drawText(message, 1,1 );
         tick++; // increment for decision making
 
         // read game pads and make initial calcs
