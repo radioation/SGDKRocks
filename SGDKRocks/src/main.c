@@ -34,6 +34,7 @@
 
 //#define UFO_SPAWN_TIME  0x02f8
 #define UFO_SPAWN_TIME  300
+#define UFO_SHOT_TICKS  60 
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -585,7 +586,7 @@ void updateUfo()
                 }
             }
         }
-        if ( ufoTick % 120 == 0 ) {
+        if ( ufoTick % UFO_SHOT_TICKS  == 0 ) {
             fireUfoShot();
         }
 
@@ -822,7 +823,7 @@ static void checkCollisions()
                 }
             }
 
-            // if UFO is live and  on screen, check if a rock hit it.
+            // if UFO is live and  check if a rock hit it.
             if(i < UFO_SLOT &&  obj_live[UFO_SLOT] == TRUE ) {
                 if( SPR_isVisible(obj_sprites[UFO_SLOT], false) &&
                     (obj_pos_x[i] + FIX16(2))      <  (obj_pos_x[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
@@ -846,7 +847,36 @@ static void checkCollisions()
             }
 
 
-            // check object is hit by player shot
+            // check if object is hit by UFO shot
+            if( i < UFO_SLOT  ) {
+                for (u8 j = UFO_SLOT+1; j < MAX_OBJECTS - MAX_PLAYER_SHOTS; ++j)
+                {
+                    if ( obj_live[j] == TRUE &&
+                            (obj_pos_x[i] + FIX16(2))     < (obj_pos_x[j] + FIX16(4)) &&
+                            (obj_pos_x[i] + obj_hit_w[i]) > (obj_pos_x[j] + FIX16(4)) &&
+                            (obj_pos_y[i] + FIX16(2))     < (obj_pos_y[j] + FIX16(4)) &&
+                            (obj_pos_y[i] + obj_hit_w[i]) > (obj_pos_y[j] + FIX16(4)))
+                    {
+                        // deactivate the object
+                        obj_live[i] = FALSE;
+                        // and release it
+                        SPR_releaseSprite( obj_sprites[i] );
+                        // deactivate the shot
+                        obj_live[j] = FALSE;
+                        SPR_setVisibility(obj_sprites[j], HIDDEN);
+                        // play the sound
+                        XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
+                        showExplosion(obj_pos_x[i], obj_pos_y[i]);
+                    
+                        if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
+                            // make more rocks 
+                            splitRock(i);
+                        }
+                    }
+                }
+            }
+
+            // check if object is hit by player shot
             for (u8 j = MAX_OBJECTS - MAX_PLAYER_SHOTS; j < MAX_OBJECTS; ++j)
             {
 
