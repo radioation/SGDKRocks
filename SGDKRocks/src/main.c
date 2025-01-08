@@ -790,7 +790,7 @@ static void checkCollisions()
 
     for (u16 i = 0; i < MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
     {
-        if (obj_live[i] == TRUE)
+        if (obj_live[i] == TRUE && SPR_isVisible( obj_sprites[i], false ))
         {
             
             // check if ship has hit by anything that wasn't a player shot
