@@ -64,7 +64,9 @@ s16 camPosX; // relative to total world map
 s16 camPosY; // relative to total world map
 
 static u8 tick = 0; // just a commn tick for everyone to use
-static u8 level = 1;
+s16 delayTicks = -1; // count down times to delay events, like rocks at the start of a level.
+u16 level = 1;
+
 
 enum GAME_MODE {
     attract_mode,
@@ -142,7 +144,29 @@ bool explosion_live[MAX_EXPLOSIONS];
 
 // utils
 
+void clear_enemy_objs() {
+
+    for( u8 i=0; i < MAX_ROCKS + 1; ++i ) {
+        if( obj_sprites[i] != NULL ) {
+            SPR_releaseSprite( obj_sprites[i] );
+            obj_sprites[i] = NULL;
+        }
+        obj_speed_x[i] = 0;
+        obj_speed_y[i] = 0;
+        obj_pos_x[i] = 0;
+        obj_pos_y[i] = 0;
+        obj_type[i] = 0;
+        obj_hit_w[i] = 0;
+    }
+    for( u8 i=0; i < MAX_ROCKS+1; ++i ) {
+        obj_live[i] = FALSE;
+    }
+}
+
+
 void clear_objs() {
+
+
     memset( obj_sprites, 0, sizeof( obj_sprites ));
     memset( obj_speed_x, 0, sizeof( obj_speed_x ));
     memset( obj_speed_y, 0, sizeof( obj_speed_y ));
@@ -272,6 +296,16 @@ void inputCallback(u16 joy, u16 changed, u16 state)
                     break;
                 }
             }
+        }
+    } else {
+        if (changed & state & BUTTON_START ) {
+            clear_enemy_objs();
+            level = 1;
+            game_mode = play_mode;
+            VDP_clearPlane( BG_A, FALSE);
+            delayTicks = 120;
+            VDP_drawText("           ", 14, 20 );
+
         }
     }
 }
@@ -423,7 +457,7 @@ void createUfo( )  {
     // start on one side
     obj_type[UFO_SLOT] = UFO;
     f16 vel = FIX16(0.5);
-    level = 6;
+
     obj_hit_w[UFO_SLOT] = FIX16(28);
     if( level > 12 ) {
         obj_type[UFO_SLOT] = SMALL_UFO; 
@@ -766,8 +800,14 @@ void createRocks(u8 rockCount )
     for (u8 i = 0; i < MAX_ROCKS; ++i)
     {
         if( i < rockCount ) {
-            fix16 x = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
-            fix16 y = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
+            fix16 x = FIX16(-MAP_HALF_WIDTH);
+            fix16 y = FIX16(-MAP_HALF_HEIGHT);
+            if( random() %2 == 0 ) {
+                // x edges
+                y = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
+            } else {
+                x = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
+            }
             createRock( i, ROCK, x, y );
         } else {
             // clear out the rest  of the rocks
@@ -829,6 +869,7 @@ static void checkCollisions()
                     // release rocks or UFO since a different sprite type may occupy 
                     // this slot later
                     SPR_releaseSprite( obj_sprites[i] );
+                    obj_sprites[i] = NULL;
                 } else {
                     // shots stay 
                     SPR_setVisibility(obj_sprites[i], HIDDEN);
@@ -856,8 +897,10 @@ static void checkCollisions()
                     // destory both
                     obj_live[i] = FALSE;
                     SPR_releaseSprite( obj_sprites[i] );
+                    obj_sprites[i] = NULL;
                     obj_live[UFO_SLOT] = FALSE;
                     SPR_releaseSprite( obj_sprites[UFO_SLOT] );
+                    obj_sprites[UFO_SLOT] = NULL;
                     XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
                     showExplosion(obj_pos_x[i], obj_pos_y[i]);
                     if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
@@ -883,6 +926,7 @@ static void checkCollisions()
                         obj_live[i] = FALSE;
                         // and release it
                         SPR_releaseSprite( obj_sprites[i] );
+                        obj_sprites[i] = NULL;
                         // deactivate the shot
                         obj_live[j] = FALSE;
                         SPR_setVisibility(obj_sprites[j], HIDDEN);
@@ -913,6 +957,7 @@ static void checkCollisions()
                     obj_live[i] = FALSE;
                     // and release it
                     SPR_releaseSprite( obj_sprites[i] );
+                    obj_sprites[i] = NULL;
                     //SPR_setVisibility(obj_sprites[i], HIDDEN);
 
 
@@ -1081,7 +1126,7 @@ int main(bool hard)
     createRocks(MAX_ROCKS);
 
     JOY_setEventHandler(&inputCallback);
-
+    u8 showStartMessage = 0;
     char message[40];
     while(TRUE)
     {
@@ -1092,55 +1137,25 @@ int main(bool hard)
             sprintf( message, "Ships: %d  Score: %d ", lives, score);
             VDP_drawText(message, 1,1 );
             handleInput();
+            if( delayTicks > 0 ) {
+                delayTicks--;
+            } else if ( delayTicks == 0 ) {
+                // start it up
+                createRocks(5);
+                delayTicks--;
+            } 
         } else {
-            VDP_drawText("Press Start", 14, 20 );
+            showStartMessage++;
+            if( showStartMessage < 40 ) {
+                VDP_drawText("Press Start", 14, 20 );
+            } else if (showStartMessage < 60 ) {
+                VDP_drawText("           ", 14, 20 );
+            } else {
+                showStartMessage = 0;
+            }
         }
-        /*
-        // output calcs
-        char thrX[10];
-        fix16ToStr( thrustX[shipDir], thrX, 4 );
-        char thrY[10];
-        fix16ToStr( thrustY[shipDir], thrY, 4 );
-        sprintf( message, " shipDir: %d tx: %s ty %s ", shipDir, thrX, thrY   );
-        VDP_drawText(message, 1,1 );
-        char spdX[10];
-        fix16ToStr( ship_speed_x, spdX, 4 );
-        char spdY[10];
-        fix16ToStr( ship_speed_y, spdY, 4 );
-        sprintf( message, " sx: %s sy: %s ", spdX, spdY);
-        VDP_drawText(message, 1,2 );
-        char accX[10];
-        fix16ToStr( ship_accel_x, accX, 4 );
-        char accY[10];
-        fix16ToStr( ship_accel_y, accY, 4 );
-        sprintf( message, " ax: %s ay: %s ",  accX, accY);
-
-        VDP_drawText(message, 1,3 );
-        char maxX[10];
-        fix16ToStr( max_speed_x[shipDir], maxX, 4 );
-        char maxY[10];
-        fix16ToStr( max_speed_y[shipDir], maxY, 4 );
-        sprintf( message, " shipDir: %d mx: %s my %s ", shipDir, maxX, maxY   );
-        VDP_drawText(message, 1,4 );
-
-        char posX[10];
-        fix16ToStr( ship_pos_x, posX, 4 );
-        char posY[10];
-        fix16ToStr( ship_pos_y, posY, 4 );
-        sprintf( message, " px: %s py: %s ",  posX, posY);
-        VDP_drawText(message, 1,5 );
-
-        sprintf( message, " cam x: %d cam y: %d   ", camPosX, camPosY );
-        VDP_drawText(message, 1,6 );
 
 
-        char shtX[10];
-        fix16ToStr( obj_pos_x[MAX_OBJECTS-MAX_PLAYER_SHOTS], shtX, 4 );
-        char shtY[10];
-        fix16ToStr( obj_pos_y[MAX_OBJECTS-MAX_PLAYER_SHOTS], shtY, 4 );
-        sprintf( message, "SHOT x: %s y: %s t: %d ",  shtX, shtY, obj_ticks[MAX_OBJECTS-MAX_PLAYER_SHOTS]);
-        VDP_drawText(message, 1,7 );
-        */
 
         updateUfo();
 
