@@ -24,7 +24,6 @@
 
 /////////////////////////////////////////////////////////////////////////////////
 // Define enemy constants
-
 #define MAX_OBJECTS         45
 // leave 7 of the objs for UFOs and player shots  ( 4 player shots, 1 UFOS, and 2 ufo shots )
 #define MAX_ROCKS           38
@@ -66,6 +65,15 @@ s16 camPosY; // relative to total world map
 
 static u8 tick = 0; // just a commn tick for everyone to use
 static u8 level = 1;
+
+enum GAME_MODE {
+    attract_mode,
+    play_mode,
+    high_score_mode // someday
+};
+
+u8 game_mode = attract_mode;
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // Moving Objs variables
@@ -109,7 +117,7 @@ fix16 ship_speed_x = FIX16(0.0);
 fix16 ship_speed_y = FIX16(0.0);
 fix16 ship_pos_x = FIX16(0.0);
 fix16 ship_pos_y = FIX16(0.0);
-const fix16 max_speed = FIX16(4.5);
+const fix16 max_speed = FIX16(4.0);
 fix16 max_speed_x[256];
 fix16 max_speed_y[256];
 Sprite *blink_sprite;
@@ -244,23 +252,25 @@ void updateCameraPos()
 void inputCallback(u16 joy, u16 changed, u16 state)
 {
     // create a shot if available
-    if (changed & state & BUTTON_A && !isBlinkDown)
-    {
-        for (s16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
+    if( game_mode == play_mode ) {
+        if (changed & state & BUTTON_A && !isBlinkDown)
         {
-
-            if (obj_live[i] == FALSE)
+            for (s16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
             {
-                // create a new one
-                XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
 
-                obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
-                obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
-                obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 4 );
-                obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 4 );
-                obj_live[i] = TRUE;
-                obj_ticks[i] = 0; // you do need this.
-                break;
+                if (obj_live[i] == FALSE)
+                {
+                    // create a new one
+                    XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
+
+                    obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
+                    obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
+                    obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 4 );
+                    obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 4 );
+                    obj_live[i] = TRUE;
+                    obj_ticks[i] = 0; // you do need this.
+                    break;
+                }
             }
         }
     }
@@ -269,132 +279,143 @@ void inputCallback(u16 joy, u16 changed, u16 state)
 void handleInput()
 {
 
-    u16 currState = JOY_readJoypad(JOY_1);
-    // check rotation every frame.
-    if (currState & BUTTON_LEFT)
-    {
-        shipDir -=angleStep;
-        // ship rotation with 32 total frames and 256 total dirs. 1 frame has to cover
-        //  8 dirs.   so frame 0 could cover dirs  252 253 254 255  0 1 2 3
-        //        .   so frame 1 covers dirs  4 5 6 7 8 9 10 11
-        u8 tmpDir = shipDir + 4;
-        SPR_setAnim(ship_sprite, tmpDir >> 3);
-    }
-    else if (currState & BUTTON_RIGHT)
-    {
-        shipDir +=angleStep;
-        u8 tmpDir = shipDir + 4;
-        SPR_setAnim(ship_sprite, tmpDir >> 3);
-
-    }
-
-    if (currState & BUTTON_B) {
-        if( !isBlinkDown ) {
-            isBlinkDown = TRUE;
-            SPR_setVisibility(blink_sprite, VISIBLE);
+    if( game_mode == play_mode ) {
+        u16 currState = JOY_readJoypad(JOY_1);
+        // check rotation every frame.
+        if (currState & BUTTON_LEFT)
+        {
+            shipDir -=angleStep;
+            // ship rotation with 32 total frames and 256 total dirs. 1 frame has to cover
+            //  8 dirs.   so frame 0 could cover dirs  252 253 254 255  0 1 2 3
+            //        .   so frame 1 covers dirs  4 5 6 7 8 9 10 11
+            u8 tmpDir = shipDir + 4;
+            SPR_setAnim(ship_sprite, tmpDir >> 3);
         }
+        else if (currState & BUTTON_RIGHT)
+        {
+            shipDir +=angleStep;
+            u8 tmpDir = shipDir + 4;
+            SPR_setAnim(ship_sprite, tmpDir >> 3);
+
+        }
+
+        if (currState & BUTTON_B) {
+            if( !isBlinkDown ) {
+                isBlinkDown = TRUE;
+                SPR_setVisibility(blink_sprite, VISIBLE);
+            }
+        } else {
+            if( isBlinkDown ) {
+                // just released blink
+                isBlinkDown = FALSE;
+                ship_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
+                ship_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
+                SPR_setVisibility(blink_sprite, HIDDEN);
+            }
+        }
+
+        if( tick & 0x01 ) {
+            // check thrust every other frame.
+            if (currState & BUTTON_UP && !isBlinkDown)
+            {
+                // thrust
+                //ship_accel_x += (thrustX[shipDir] >> 2);
+                ship_accel_x += thrustX[shipDir];
+                ship_speed_x += ship_accel_x;
+                if( ship_speed_x > FIX16(0.0) && ship_accel_x > FIX16(0.0) && ship_speed_x >  max_speed_x[shipDir] ) {
+                    ship_speed_x = max_speed_x[shipDir];
+                    ship_accel_x = FIX16(0.0);
+                } else if ( ship_speed_x < FIX16(0) && ship_accel_x < FIX16(0.0) && ship_speed_x <  max_speed_x[shipDir] ) {
+                    ship_speed_x = max_speed_x[shipDir];
+                    ship_accel_x = FIX16(0.0);
+                }
+
+                //ship_accel_y += (thrustY[shipDir] >> 2);
+                ship_accel_y += thrustY[shipDir];
+                ship_speed_y += ship_accel_y;
+                if( ship_speed_y > FIX16(0.0) && ship_accel_y > FIX16(0.0) && ship_speed_y >  max_speed_y[shipDir] ) {
+                    ship_speed_y = max_speed_y[shipDir];
+                    ship_accel_y = FIX16(0.0);
+                } else if ( ship_speed_y < FIX16(0.0) && ship_accel_y < FIX16(0.0) && ship_speed_y < max_speed_y[shipDir] ) {
+                    ship_speed_y = max_speed_y[shipDir];
+                    ship_accel_y = FIX16(0.0);
+                }
+
+            }
+            else
+            {
+                // Decelerate without atan()/atan2()
+                // not thrusting, check x and y movemtn components
+                //  and turn orn acceleration to counter.
+                if( ship_speed_x > FIX16(0.0) ) {
+                    ship_accel_x = FIX16(-0.05);
+                    /*
+                       ship_accel_x = -( ship_speed_x >> 3 );
+                       if ( ship_accel_x == FIX16(0.0 ) ){
+                       ship_accel_x = FIX16(-0.05);
+                       }
+                       */
+                    ship_speed_x += ship_accel_x;
+                    if( ship_speed_x <= FIX16(0.0) ) {
+                        ship_speed_x = FIX16(0.0);
+                        ship_accel_x = FIX16(0.0);
+                        ship_speed_y = FIX16(0.0);
+                        ship_accel_y = FIX16(0.0);
+                    }
+                } else if( ship_speed_x < FIX16(0.0) ) {
+                    ship_accel_x = FIX16(0.05);
+                    /*
+                       ship_accel_x =  -(ship_speed_x >> 3);
+                       if ( ship_accel_x == FIX16(0.0 ) ){
+                       ship_accel_x = FIX16(0.05);
+                       }*/
+                    ship_speed_x += ship_accel_x;
+                    if( ship_speed_x >= FIX16(0.0) ) {
+                        ship_speed_x = FIX16(0.0);
+                        ship_accel_x = FIX16(0.0);
+                        ship_speed_y = FIX16(0.0);
+                        ship_accel_y = FIX16(0.0);
+                    }
+                }
+
+                if( ship_speed_y > FIX16(0.0) ) {
+                    ship_accel_y = FIX16(-0.05);
+                    /*
+                       ship_accel_y = -( ship_speed_y >> 3 );
+                       if ( ship_accel_y == FIX16(0.0 ) ){
+                       ship_accel_y = FIX16(-0.05);
+                       }
+                       */
+                    ship_speed_y += ship_accel_y;
+                    if( ship_speed_y <= FIX16(0.0) ) {
+                        ship_speed_x = FIX16(0.0);
+                        ship_accel_x = FIX16(0.0);
+                        ship_speed_y = FIX16(0.0);
+                        ship_accel_y = FIX16(0.0);
+                    }
+                } else if( ship_speed_y < FIX16(0.0) ) {
+                    ship_accel_y = FIX16(0.05);
+                    /*
+                       ship_accel_y = -( ship_speed_y >> 3 );
+                       if ( ship_accel_y == FIX16(0.0 ) ){
+                       ship_accel_y = FIX16(0.05);
+                       }
+                       */
+                    ship_speed_y += ship_accel_y;
+                    if( ship_speed_y >= FIX16(0.0) ) {
+                        ship_speed_x = FIX16(0.0);
+                        ship_accel_x = FIX16(0.0);
+                        ship_speed_y = FIX16(0.0);
+                        ship_accel_y = FIX16(0.0);
+                    }
+                }
+
+            }
+
+        } 
     } else {
-        if( isBlinkDown ) {
-            // just released blink
-            isBlinkDown = FALSE;
-            ship_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
-            ship_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
-            SPR_setVisibility(blink_sprite, HIDDEN);
-        }
+
     }
-
-    if( tick & 0x01 ) {
-        // check thrust every other frame.
-        if (currState & BUTTON_UP && !isBlinkDown)
-        {
-            // thrust
-            //ship_accel_x += (thrustX[shipDir] >> 2);
-            ship_accel_x += thrustX[shipDir];
-            ship_speed_x += ship_accel_x;
-            if( ship_speed_x > FIX16(0.0) && ship_accel_x > FIX16(0.0) && ship_speed_x >  max_speed_x[shipDir] ) {
-                ship_speed_x = max_speed_x[shipDir];
-                ship_accel_x = FIX16(0.0);
-            } else if ( ship_speed_x < FIX16(0) && ship_accel_x < FIX16(0.0) && ship_speed_x <  max_speed_x[shipDir] ) {
-                ship_speed_x = max_speed_x[shipDir];
-                ship_accel_x = FIX16(0.0);
-            }
-
-            //ship_accel_y += (thrustY[shipDir] >> 2);
-            ship_accel_y += thrustY[shipDir];
-            ship_speed_y += ship_accel_y;
-            if( ship_speed_y > FIX16(0.0) && ship_accel_y > FIX16(0.0) && ship_speed_y >  max_speed_y[shipDir] ) {
-                ship_speed_y = max_speed_y[shipDir];
-                ship_accel_y = FIX16(0.0);
-            } else if ( ship_speed_y < FIX16(0.0) && ship_accel_y < FIX16(0.0) && ship_speed_y < max_speed_y[shipDir] ) {
-                ship_speed_y = max_speed_y[shipDir];
-                ship_accel_y = FIX16(0.0);
-            }
-
-        }
-        else
-        {
-            // Decelerate without atan()/atan2()
-            // not thrusting, check x and y movemtn components
-            //  and turn orn acceleration to counter.
-            if( ship_speed_x > FIX16(0.0) ) {
-                ship_accel_x = FIX16(-0.07);
-                /*
-                   ship_accel_x = -( ship_speed_x >> 3 );
-                   if ( ship_accel_x == FIX16(0.0 ) ){
-                   ship_accel_x = FIX16(-0.05);
-                   }
-                   */
-                ship_speed_x += ship_accel_x;
-                if( ship_speed_x <= FIX16(0.0) ) {
-                    ship_speed_x = FIX16(0.0);
-                    ship_accel_x = FIX16(0.0);
-                }
-            } else if( ship_speed_x < FIX16(0.0) ) {
-                ship_accel_x = FIX16(0.07);
-                /*
-                   ship_accel_x =  -(ship_speed_x >> 3);
-                   if ( ship_accel_x == FIX16(0.0 ) ){
-                   ship_accel_x = FIX16(0.05);
-                   }*/
-                ship_speed_x += ship_accel_x;
-                if( ship_speed_x >= FIX16(0.0) ) {
-                    ship_speed_x = FIX16(0.0);
-                    ship_accel_x = FIX16(0.0);
-                }
-            }
-
-            if( ship_speed_y > FIX16(0.0) ) {
-                ship_accel_y = FIX16(-0.07);
-                /*
-                   ship_accel_y = -( ship_speed_y >> 3 );
-                   if ( ship_accel_y == FIX16(0.0 ) ){
-                   ship_accel_y = FIX16(-0.05);
-                   }
-                   */
-                ship_speed_y += ship_accel_y;
-                if( ship_speed_y <= FIX16(0.0) ) {
-                    ship_speed_y = FIX16(0.0);
-                    ship_accel_y = FIX16(0.0);
-                }
-            } else if( ship_speed_y < FIX16(0.0) ) {
-                ship_accel_y = FIX16(0.07);
-                /*
-                   ship_accel_y = -( ship_speed_y >> 3 );
-                   if ( ship_accel_y == FIX16(0.0 ) ){
-                   ship_accel_y = FIX16(0.05);
-                   }
-                   */
-                ship_speed_y += ship_accel_y;
-                if( ship_speed_y >= FIX16(0.0) ) {
-                    ship_speed_y = FIX16(0.0);
-                    ship_accel_y = FIX16(0.0);
-                }
-            }
-
-        }
-
-    } 
-
 
 }
 
@@ -426,13 +447,13 @@ void createUfo( )  {
         obj_hit_w[UFO_SLOT] = FIX16(12);
         obj_sprites[UFO_SLOT] = SPR_addSprite(&small_ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     } else {
-       obj_sprites[UFO_SLOT] = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+        obj_sprites[UFO_SLOT] = SPR_addSprite(&ufo, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     }
 
 
     // start at same Y as ship
     obj_pos_y[UFO_SLOT]= ship_pos_y;
-     
+
     if(  random() % 2 == 0 ) {
         // go left to right
         obj_speed_x[UFO_SLOT] = vel;
@@ -444,14 +465,14 @@ void createUfo( )  {
     }
 
     /*
-    obj_type[UFO_SLOT] = SMALL_UFO;
-        obj_speed_x[UFO_SLOT] = FIX16(0);
-        obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(50);
-        obj_speed_y[UFO_SLOT] = FIX16(0);
-        obj_pos_y[UFO_SLOT]= ship_pos_y - FIX16(60);
-*/
+       obj_type[UFO_SLOT] = SMALL_UFO;
+       obj_speed_x[UFO_SLOT] = FIX16(0);
+       obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(50);
+       obj_speed_y[UFO_SLOT] = FIX16(0);
+       obj_pos_y[UFO_SLOT]= ship_pos_y - FIX16(60);
+       */
     obj_live[UFO_SLOT] = TRUE;
-    
+
     SPR_setAnim(obj_sprites[UFO_SLOT], 0);
 }
 
@@ -699,17 +720,18 @@ void update()
 
 
     updateCameraPos();
-    if( isBlinkDown && ( tick & 0x04 ) ) {
-        ship_blink_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
-        ship_blink_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
-        SPR_setPosition(ship_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
-        SPR_setPosition(blink_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
+    if( game_mode == play_mode ) {
+        if( isBlinkDown && ( tick & 0x04 ) ) {
+            ship_blink_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
+            ship_blink_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
+            SPR_setPosition(ship_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(blink_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
 
-    } else {
-        SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
-        SPR_setPosition(blink_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+        } else {
+            SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(blink_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+        }
     }
-
     //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
 }
 
@@ -792,9 +814,9 @@ static void checkCollisions()
     {
         if (obj_live[i] == TRUE && SPR_isVisible( obj_sprites[i], false ))
         {
-            
+
             // check if ship has hit by anything that wasn't a player shot
-            if ( obj_live[i] == TRUE && !isBlinkDown &&
+            if ( game_mode == play_mode && obj_live[i] == TRUE && !isBlinkDown &&
                     (obj_pos_x[i] + FIX16(2))      < (ship_pos_x + FIX16(21) ) &&
                     (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(3) )  &&
                     (obj_pos_y[i] + FIX16(2))      < (ship_pos_y + FIX16(21) ) &&
@@ -826,12 +848,12 @@ static void checkCollisions()
             // if UFO is live and  check if a rock hit it.
             if(i < UFO_SLOT &&  obj_live[UFO_SLOT] == TRUE ) {
                 if( SPR_isVisible(obj_sprites[UFO_SLOT], false) &&
-                    (obj_pos_x[i] + FIX16(2))      <  (obj_pos_x[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
-                    (obj_pos_x[i] + obj_hit_w[i] ) >  (obj_pos_x[UFO_SLOT] + FIX16(2))      &&
-                    (obj_pos_y[i] + FIX16(2))      <  (obj_pos_y[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
-                    (obj_pos_y[i] + obj_hit_w[i])  >  (obj_pos_y[UFO_SLOT] + FIX16(2))  )
-                 {
-                     // destory both
+                        (obj_pos_x[i] + FIX16(2))      <  (obj_pos_x[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
+                        (obj_pos_x[i] + obj_hit_w[i] ) >  (obj_pos_x[UFO_SLOT] + FIX16(2))      &&
+                        (obj_pos_y[i] + FIX16(2))      <  (obj_pos_y[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
+                        (obj_pos_y[i] + obj_hit_w[i])  >  (obj_pos_y[UFO_SLOT] + FIX16(2))  )
+                {
+                    // destory both
                     obj_live[i] = FALSE;
                     SPR_releaseSprite( obj_sprites[i] );
                     obj_live[UFO_SLOT] = FALSE;
@@ -867,7 +889,7 @@ static void checkCollisions()
                         // play the sound
                         XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
                         showExplosion(obj_pos_x[i], obj_pos_y[i]);
-                    
+
                         if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
                             // make more rocks 
                             splitRock(i);
@@ -1026,6 +1048,9 @@ int main(bool hard)
     // Load the plane tiles into VRAM
     int ind = TILE_USER_INDEX;
     VDP_loadTileSet(&plane_b_tileset, ind, DMA);
+    int ind_title = ind +  plane_b_tileset.numTile;
+    VDP_loadTileSet(title.tileset, ind_title, DMA);
+
 
     // init background map
     map_b = MAP_create(&plane_b_map, BG_B, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind));
@@ -1033,15 +1058,17 @@ int main(bool hard)
     camPosY = 0 - SCR_HEIGHT / 2;
     MAP_scrollTo(map_b, camPosX, camPosY);
 
+    VDP_drawImageEx(BG_A, &title, TILE_ATTR_FULL(PAL3, TRUE, FALSE, FALSE, ind_title), 0, 0, FALSE, TRUE);    
+
+
     /////////////////////////////////////////////////////////////////////////////////
     // Init sprite engine with defaults
     SPR_initEx(900);
-    ship_pos_x = FIX16(- 12);
-    ship_pos_y = FIX16(- 12);
-    //ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
+    ship_pos_x = FIX16(- 32);
+    ship_pos_y = FIX16(- 32);
     blink_sprite = SPR_addSprite(&blink2, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     SPR_setVisibility(blink_sprite, HIDDEN);
-    ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL2, 0, FALSE, FALSE));
+    ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x), fix16ToInt(ship_pos_y), TILE_ATTR(PAL2, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
     //Sprite* bsprite = SPR_addSprite(&blink, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
 
@@ -1058,12 +1085,16 @@ int main(bool hard)
     char message[40];
     while(TRUE)
     {
-        sprintf( message, "Ships: %d  Score: %d ", lives, score);
-        VDP_drawText(message, 1,1 );
         tick++; // increment for decision making
 
         // read game pads and make initial calcs
-        handleInput();
+        if( game_mode == play_mode ) {
+            sprintf( message, "Ships: %d  Score: %d ", lives, score);
+            VDP_drawText(message, 1,1 );
+            handleInput();
+        } else {
+            VDP_drawText("Press Start", 14, 20 );
+        }
         /*
         // output calcs
         char thrX[10];
