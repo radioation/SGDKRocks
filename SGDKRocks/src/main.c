@@ -71,6 +71,7 @@ u16 level = 1;
 enum GAME_MODE {
     attract_mode,
     play_mode,
+    dead_mode,
     high_score_mode // someday
 };
 
@@ -682,7 +683,12 @@ void update()
         if( ship_state == ship_dead ) {
             if( ship_ticks > 180 ) {
                 // spawn ship in 3 seconds.
-                spawnShip();
+                if( lives > 0 ) {
+                    spawnShip();
+                } else {
+                    // game mode
+                    game_mode = attract_mode;
+                }
             }
         }
     }
@@ -903,6 +909,9 @@ static void checkCollisions()
                 ship_speed_x = FIX16(0);  
                 ship_speed_y = FIX16(0);  
                 SPR_setVisibility(ship_sprite, HIDDEN);
+                if( lives == 0 ) {
+                    VDP_drawText( "GAME OVER", 15, 12 );
+                }
             }
 
             // if UFO is live and  check if a rock hit it.
