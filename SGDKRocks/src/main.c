@@ -90,17 +90,19 @@ bool obj_live[MAX_OBJECTS];
 
 #define NO_TYPE 0
 #define PLAYER 1
-#define PLAYER_SHOT 3
+#define PLAYER_SHOT 2
 
-#define ROCK 10
-#define MID_ROCK 25
-#define SMALL_ROCK 50
-#define UFO 100
-#define SMALL_UFO 200
-#define STAR 75 
-#define SHARD 150 
+#define ROCK 3 
+#define MID_ROCK 4
+#define SMALL_ROCK 5
+#define UFO 6
+#define SMALL_UFO 7
+#define STAR_GESTALT 8
+#define STAR_SHARD 10
 
 u8 obj_type[MAX_OBJECTS];
+
+s16 score_by_type[] = { 0,0,0, 20, 50, 100, 150, 300, 150, 50 };
 
 /////////////////////////////////////////////////////////////////////////////////
 // player variables
@@ -944,7 +946,7 @@ static void checkCollisions()
                     // play the sound
                     XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH3);
                     showExplosion(obj_pos_x[i], obj_pos_y[i]);
-                    score += obj_type[i];
+                    score += score_by_type[obj_type[i]];
                     if( obj_type[i] == ROCK || obj_type[i] == MID_ROCK ) {
                         // make more rocks 
                         splitRock(i);
