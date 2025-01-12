@@ -113,7 +113,6 @@ fix16 thrustY[256];
 u8 shipDir = 0; // 0 is up
 const u8 angleStep = 3; // turn rate.
 
-
 Sprite *ship_sprite;
 fix16 ship_accel_x = FIX16(0.0);
 fix16 ship_accel_y = FIX16(0.0);
@@ -124,15 +123,23 @@ fix16 ship_pos_y = FIX16(0.0);
 const fix16 max_speed = FIX16(4.0);
 fix16 max_speed_x[256];
 fix16 max_speed_y[256];
-Sprite *blink_sprite;
+Sprite *warp_sprite;
 //static u8 prevBlinkState = 0;
 //static u8 currBlinkState = 0;
-static bool isBlinkDown = FALSE;
-fix16 ship_blink_pos_x = FIX16(0.0);
-fix16 ship_blink_pos_y = FIX16(0.0);
-
+//static bool isWarpDown = FALSE;
+enum SHIP_STATE {
+    ship_dead = 0,
+    ship_live = 1,
+    ship_warping_in = 2,
+    ship_warp_pressed = 4,
+};
+fix16 ship_warp_pos_x = FIX16(0.0);
+fix16 ship_warp_pos_y = FIX16(0.0);
+u8 ship_state = ship_dead;
 static u16 score = 0;
 static s16 lives = 3;
+static s16 ship_ticks = 0;
+
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -279,7 +286,7 @@ void inputCallback(u16 joy, u16 changed, u16 state)
 {
     // create a shot if available
     if( game_mode == play_mode ) {
-        if (changed & state & BUTTON_A && !isBlinkDown)
+        if (changed & state & BUTTON_A && (ship_state & ship_live ) &&  !( ship_state & ship_warp_pressed) )
         {
             for (s16 i = MAX_OBJECTS - MAX_PLAYER_SHOTS; i < MAX_OBJECTS; ++i)
             {
@@ -303,6 +310,7 @@ void inputCallback(u16 joy, u16 changed, u16 state)
         if (changed & state & BUTTON_START ) {
             clear_enemy_objs();
             level = 1;
+            ship_state = ship_live;
             game_mode = play_mode;
             VDP_clearPlane( BG_A, FALSE);
             delayTicks = 120;
@@ -315,7 +323,7 @@ void inputCallback(u16 joy, u16 changed, u16 state)
 void handleInput()
 {
 
-    if( game_mode == play_mode ) {
+    if( game_mode == play_mode && (ship_state & ship_live)  ) {
         u16 currState = JOY_readJoypad(JOY_1);
         // check rotation every frame.
         if (currState & BUTTON_LEFT)
@@ -336,23 +344,24 @@ void handleInput()
         }
 
         if (currState & BUTTON_B) {
-            if( !isBlinkDown ) {
-                isBlinkDown = TRUE;
-                SPR_setVisibility(blink_sprite, VISIBLE);
+            if( !(ship_state & ship_warp_pressed) ) {
+                // player just pressed warp button
+                ship_state |= ship_warp_pressed;
+                SPR_setVisibility(warp_sprite, VISIBLE);
             }
         } else {
-            if( isBlinkDown ) {
-                // just released blink
-                isBlinkDown = FALSE;
+            if( ship_state & ship_warp_pressed ) {
+                // player just released warp
+                ship_state ^= ship_warp_pressed;
                 ship_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
                 ship_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
-                SPR_setVisibility(blink_sprite, HIDDEN);
+                SPR_setVisibility(warp_sprite, HIDDEN);
             }
         }
 
         if( tick & 0x01 ) {
             // check thrust every other frame.
-            if (currState & BUTTON_UP && !isBlinkDown)
+            if (currState & BUTTON_UP && !(ship_state & ship_warp_pressed))
             {
                 // thrust
                 //ship_accel_x += (thrustX[shipDir] >> 2);
@@ -627,24 +636,46 @@ void updateUfo()
     }
 
 }
+void spawnShip() {
+    // put the ship in the center 
+    //   px =   screenx + camPosX
+    ship_pos_x = FIX16(camPosX + 147 - MAP_HALF_WIDTH);
+    ship_pos_y = FIX16(camPosY + 100 - MAP_HALF_HEIGHT);
+    SPR_setVisibility(ship_sprite, VISIBLE);
+    ship_state = ship_live;
+    
+    // set tstate to live but warping
+   
+
+}
 
 void update()
 {
 
     // update the player
-    ship_pos_x = ship_pos_x + ship_speed_x;
-    ship_pos_y = ship_pos_y + ship_speed_y;
+    if( ship_state & ship_live ) {
+        ship_pos_x = ship_pos_x + ship_speed_x;
+        ship_pos_y = ship_pos_y + ship_speed_y;
 
-    if( ship_pos_x < FIX16(-6.0 - MAP_HALF_WIDTH ) ) {
-        ship_pos_x = FIX16(-6.0 - MAP_HALF_WIDTH);
-    } else if( ship_pos_x > FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 ) ) {
-        ship_pos_x = FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 );
-    }
+        if( ship_pos_x < FIX16(-6.0 - MAP_HALF_WIDTH ) ) {
+            ship_pos_x = FIX16(-6.0 - MAP_HALF_WIDTH);
+        } else if( ship_pos_x > FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 ) ) {
+            ship_pos_x = FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 );
+        }
 
-    if( ship_pos_y < FIX16(-6.0 - MAP_HALF_HEIGHT) ) {
-        ship_pos_y = FIX16(-6.0 - MAP_HALF_HEIGHT);
-    } else if( ship_pos_y > FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 ) ) {
-        ship_pos_y = FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 );
+        if( ship_pos_y < FIX16(-6.0 - MAP_HALF_HEIGHT) ) {
+            ship_pos_y = FIX16(-6.0 - MAP_HALF_HEIGHT);
+        } else if( ship_pos_y > FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 ) ) {
+            ship_pos_y = FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 );
+        }
+    } else {
+        ship_ticks++;
+        if( ship_state == ship_dead ) {
+            if( ship_ticks > 360 ) {
+                // spawn ship
+                spawnShip();
+            }
+        }
     }
 
     // deactiveate shots if they've been around too long.
@@ -660,14 +691,6 @@ void update()
             }
         }
     }
-    /*
-       for (u16 i = UFO_SLOT + 1;  i <  MAX_OBJECTS - MAX_PLAYER_SHOTS; ++i)
-       {
-       if (obj_live[i] == FALSE)
-       {
-       }
-       }
-       */
 
     // update non-players objects.
     for (u16 i = 0; i < MAX_OBJECTS; ++i)
@@ -734,15 +757,15 @@ void update()
 
     updateCameraPos();
     if( game_mode == play_mode ) {
-        if( isBlinkDown && ( tick & 0x04 ) ) {
-            ship_blink_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
-            ship_blink_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
-            SPR_setPosition(ship_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
-            SPR_setPosition(blink_sprite, fix16ToInt(ship_blink_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_blink_pos_y) - camPosY + MAP_HALF_HEIGHT);
+        if( (ship_state & ship_warp_pressed) && ( tick & 0x04 ) ) {
+            ship_warp_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
+            ship_warp_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
+            SPR_setPosition(ship_sprite, fix16ToInt(ship_warp_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_warp_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(warp_sprite, fix16ToInt(ship_warp_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_warp_pos_y) - camPosY + MAP_HALF_HEIGHT);
 
         } else {
             SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
-            SPR_setPosition(blink_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(warp_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
         }
     }
     //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
@@ -835,14 +858,15 @@ static void checkCollisions()
         {
 
             // check if ship has hit by anything that wasn't a player shot
-            if ( game_mode == play_mode && obj_live[i] == TRUE && !isBlinkDown &&
+            if ( game_mode == play_mode && obj_live[i] == TRUE && (ship_state & ship_live) &&  !(ship_state & ship_warp_pressed) &&
                     (obj_pos_x[i] + FIX16(2))      < (ship_pos_x + FIX16(21) ) &&
                     (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(3) )  &&
                     (obj_pos_y[i] + FIX16(2))      < (ship_pos_y + FIX16(21) ) &&
                     (obj_pos_y[i] + obj_hit_w[i])  > (ship_pos_y + FIX16(3) ))
             {
-                --lives;
-                // deactivate the object
+
+                // handle the killer object
+
                 obj_live[i] = FALSE;
                 if( i <= UFO_SLOT ) {   
                     // release rocks or UFO since a different sprite type may occupy 
@@ -863,6 +887,12 @@ static void checkCollisions()
                     // or reset UFO.
                     ufoTick = 0;
                 }
+                --lives;    
+                ship_state = ship_dead;
+                ship_ticks = 0;
+                ship_speed_x = FIX16(0);  
+                ship_speed_y = FIX16(0);  
+                SPR_setVisibility(ship_sprite, HIDDEN);
             }
 
             // if UFO is live and  check if a rock hit it.
@@ -1090,11 +1120,11 @@ int main(bool hard)
     SPR_initEx(900);
     ship_pos_x = FIX16(- 32);
     ship_pos_y = FIX16(- 32);
-    blink_sprite = SPR_addSprite(&blink2, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-    SPR_setVisibility(blink_sprite, HIDDEN);
+    warp_sprite = SPR_addSprite(&blink2, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    SPR_setVisibility(warp_sprite, HIDDEN);
     ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x), fix16ToInt(ship_pos_y), TILE_ATTR(PAL2, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
-    //Sprite* bsprite = SPR_addSprite(&blink, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    //Sprite* bsprite = SPR_addSprite(&link, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
 
 
 
