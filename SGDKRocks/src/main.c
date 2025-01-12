@@ -141,7 +141,6 @@ static s16 lives = 3;
 static s16 ship_ticks = 0;
 
 
-
 /////////////////////////////////////////////////////////////////////////////////
 // explosions
 
@@ -642,11 +641,8 @@ void spawnShip() {
     ship_pos_x = FIX16(camPosX + 147 - MAP_HALF_WIDTH);
     ship_pos_y = FIX16(camPosY + 100 - MAP_HALF_HEIGHT);
     SPR_setVisibility(ship_sprite, VISIBLE);
-    ship_state = ship_live;
-    
-    // set tstate to live but warping
-   
-
+    ship_state = ship_live | ship_warping_in ;
+    ship_ticks = 0 ; // reset for warp in timing.
 }
 
 void update()
@@ -654,6 +650,19 @@ void update()
 
     // update the player
     if( ship_state & ship_live ) {
+        if( ship_state & ship_warping_in ) {
+            ship_ticks++;
+            if( ship_ticks < 150 ) {
+                if ( ship_ticks % 3 ) {
+                    SPR_setVisibility(ship_sprite, VISIBLE);
+                } else {
+                    SPR_setVisibility(ship_sprite, HIDDEN);
+                }
+            } else {
+                SPR_setVisibility(ship_sprite, VISIBLE);
+                ship_state ^= ship_warping_in;
+            }
+        }
         ship_pos_x = ship_pos_x + ship_speed_x;
         ship_pos_y = ship_pos_y + ship_speed_y;
 
@@ -671,8 +680,8 @@ void update()
     } else {
         ship_ticks++;
         if( ship_state == ship_dead ) {
-            if( ship_ticks > 360 ) {
-                // spawn ship
+            if( ship_ticks > 180 ) {
+                // spawn ship in 3 seconds.
                 spawnShip();
             }
         }
@@ -858,7 +867,8 @@ static void checkCollisions()
         {
 
             // check if ship has hit by anything that wasn't a player shot
-            if ( game_mode == play_mode && obj_live[i] == TRUE && (ship_state & ship_live) &&  !(ship_state & ship_warp_pressed) &&
+            if ( game_mode == play_mode && obj_live[i] == TRUE && (ship_state & ship_live)      // ship is live
+                 && ! ((ship_state & ship_warp_pressed) || ( ship_state & ship_warping_in) ) && // but not in a warp state
                     (obj_pos_x[i] + FIX16(2))      < (ship_pos_x + FIX16(21) ) &&
                     (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(3) )  &&
                     (obj_pos_y[i] + FIX16(2))      < (ship_pos_y + FIX16(21) ) &&
