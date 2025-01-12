@@ -382,65 +382,42 @@ void handleInput()
                 // not thrusting, check x and y movemtn components
                 //  and turn orn acceleration to counter.
                 if( ship_speed_x > FIX16(0.0) ) {
-                    ship_accel_x = FIX16(-0.05);
-                    /*
-                       ship_accel_x = -( ship_speed_x >> 3 );
-                       if ( ship_accel_x == FIX16(0.0 ) ){
-                       ship_accel_x = FIX16(-0.05);
-                       }
-                       */
+                    ship_accel_x = FIX16(-0.03);
                     ship_speed_x += ship_accel_x;
                     if( ship_speed_x <= FIX16(0.0) ) {
                         ship_speed_x = FIX16(0.0);
                         ship_accel_x = FIX16(0.0);
-                        ship_speed_y = FIX16(0.0);
-                        ship_accel_y = FIX16(0.0);
+                        //ship_speed_y = FIX16(0.0);
+                        //ship_accel_y = FIX16(0.0);
                     }
                 } else if( ship_speed_x < FIX16(0.0) ) {
-                    ship_accel_x = FIX16(0.05);
-                    /*
-                       ship_accel_x =  -(ship_speed_x >> 3);
-                       if ( ship_accel_x == FIX16(0.0 ) ){
-                       ship_accel_x = FIX16(0.05);
-                       }*/
+                    ship_accel_x = FIX16(0.03);
                     ship_speed_x += ship_accel_x;
                     if( ship_speed_x >= FIX16(0.0) ) {
                         ship_speed_x = FIX16(0.0);
                         ship_accel_x = FIX16(0.0);
-                        ship_speed_y = FIX16(0.0);
-                        ship_accel_y = FIX16(0.0);
+                        //ship_speed_y = FIX16(0.0);
+                        //ship_accel_y = FIX16(0.0);
                     }
                 }
 
                 if( ship_speed_y > FIX16(0.0) ) {
-                    ship_accel_y = FIX16(-0.05);
-                    /*
-                       ship_accel_y = -( ship_speed_y >> 3 );
-                       if ( ship_accel_y == FIX16(0.0 ) ){
-                       ship_accel_y = FIX16(-0.05);
-                       }
-                       */
+                    ship_accel_y = FIX16(-0.03);
                     ship_speed_y += ship_accel_y;
                     if( ship_speed_y <= FIX16(0.0) ) {
-                        ship_speed_x = FIX16(0.0);
-                        ship_accel_x = FIX16(0.0);
                         ship_speed_y = FIX16(0.0);
                         ship_accel_y = FIX16(0.0);
+                        //ship_speed_x = FIX16(0.0);
+                        //ship_accel_x = FIX16(0.0);
                     }
                 } else if( ship_speed_y < FIX16(0.0) ) {
-                    ship_accel_y = FIX16(0.05);
-                    /*
-                       ship_accel_y = -( ship_speed_y >> 3 );
-                       if ( ship_accel_y == FIX16(0.0 ) ){
-                       ship_accel_y = FIX16(0.05);
-                       }
-                       */
+                    ship_accel_y = FIX16(0.03);
                     ship_speed_y += ship_accel_y;
                     if( ship_speed_y >= FIX16(0.0) ) {
-                        ship_speed_x = FIX16(0.0);
-                        ship_accel_x = FIX16(0.0);
                         ship_speed_y = FIX16(0.0);
                         ship_accel_y = FIX16(0.0);
+                        //ship_speed_x = FIX16(0.0);
+                        //ship_accel_x = FIX16(0.0);
                     }
                 }
 
