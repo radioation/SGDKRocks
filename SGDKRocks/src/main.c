@@ -56,6 +56,8 @@ fix16 ufoShotY[64];
 
 #define CAM_BOUNDARY        90
 
+int tile_ind_map = TILE_USER_INDEX;
+int tile_ind_title;
 
 /////////////////////////////////////////////////////////////////////////////////
 // World/Map variables
@@ -219,6 +221,15 @@ static void showExplosion(fix16 pos_x, fix16 pos_y)
     }
 }
 
+void spawnShip() {
+    // put the ship in the center 
+    //   px =   screenx + camPosX
+    ship_pos_x = FIX16(camPosX + 147 - MAP_HALF_WIDTH);
+    ship_pos_y = FIX16(camPosY + 100 - MAP_HALF_HEIGHT);
+    SPR_setVisibility(ship_sprite, VISIBLE);
+    ship_state = ship_live | ship_warping_in ;
+    ship_ticks = 0 ; // reset for warp in timing.
+}
 
 
 void updateCameraPos()
@@ -309,12 +320,14 @@ void inputCallback(u16 joy, u16 changed, u16 state)
     } else {
         if (changed & state & BUTTON_START ) {
             clear_enemy_objs();
-            level = 1;
-            ship_state = ship_live;
+            level = 10;
+            lives = 3;
             game_mode = play_mode;
             VDP_clearPlane( BG_A, FALSE);
+            spawnShip();
             delayTicks = 120;
-            VDP_drawText("           ", 14, 20 );
+           // VDP_drawText("           ", 14, 20 );
+            VDP_clearTextLine( 20 );
 
         }
     }
@@ -636,58 +649,165 @@ void updateUfo()
     }
 
 }
-void spawnShip() {
-    // put the ship in the center 
-    //   px =   screenx + camPosX
-    ship_pos_x = FIX16(camPosX + 147 - MAP_HALF_WIDTH);
-    ship_pos_y = FIX16(camPosY + 100 - MAP_HALF_HEIGHT);
-    SPR_setVisibility(ship_sprite, VISIBLE);
-    ship_state = ship_live | ship_warping_in ;
-    ship_ticks = 0 ; // reset for warp in timing.
+
+
+void createRock(u8 i, u16 rockType, fix16 x, fix16 y ) {
+
+    obj_pos_x[i] = x;
+    obj_pos_y[i] = y;
+    u8 rot = random();
+    obj_live[i] = TRUE;
+    fix16 vel = FIX16(7.0);
+    if( rockType == ROCK ) {
+        obj_hit_w[i] = FIX16(30);
+        obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    } else if ( rockType == MID_ROCK ) {
+        vel = FIX16(10.0);
+        obj_sprites[i] = SPR_addSprite(&mid_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+        obj_hit_w[i] = FIX16(22);
+    } else if ( rockType == SMALL_ROCK ) {
+        vel = FIX16(13.0);
+        obj_sprites[i] = SPR_addSprite(&small_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+        obj_hit_w[i] = FIX16(14);
+    }
+    obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
+    obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
+    SPR_setAnim(obj_sprites[i], i % 4);
+    obj_type[i] = rockType;
 }
+
+
+void createRocks(u8 rockCount )
+{
+    for (u8 i = 0; i < MAX_ROCKS; ++i)
+    {
+        if( i < rockCount ) {
+            fix16 x = FIX16(-MAP_HALF_WIDTH);
+            fix16 y = FIX16(-MAP_HALF_HEIGHT);
+            if( random() %2 == 0 ) {
+                // x edges
+                y = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
+            } else {
+                x = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
+            }
+            createRock( i, ROCK, x, y );
+        } else {
+            // clear out the rest  of the rocks
+            obj_pos_x[i] = FIX16(-32);
+            obj_pos_y[i] = FIX16(-32);
+
+            obj_speed_x[i] = FIX16(0);
+            obj_speed_y[i] = FIX16(0);
+            obj_live[i] = FALSE;
+            obj_hit_w[i] = FIX16(0);
+            obj_sprites[i] = NULL;
+            obj_type[i] = NO_TYPE;
+        }
+    }
+}
+
+
+void splitRock(u16 whichRock )
+{
+    u8 count = 0;
+    fix16 x = obj_pos_x[whichRock];
+    fix16 y = obj_pos_y[whichRock];
+    u16 newType = MID_ROCK;
+    if( obj_type[whichRock] == MID_ROCK ) {
+        newType = SMALL_ROCK;
+    }
+    // u
+    for (u8 i = 0; i < MAX_ROCKS; ++i)
+    {
+        if( obj_live[i] == FALSE ) {
+            createRock( i, newType, x, y );
+            count++;
+            if ( count == 2 ) {
+                return; 
+            }
+        }
+    }
+}
+
+
+
+
+void startAttractMode() {
+     game_mode = attract_mode;
+     ship_state = ship_dead;
+    // clear obs
+    clear_enemy_objs();
+
+    // reset map
+    camPosX = 0 - SCR_WIDTH / 2;
+    camPosY = 0 - SCR_HEIGHT / 2;
+    MAP_scrollTo(map_b, camPosX, camPosY);
+    VDP_clearTextLine( 3 );
+    VDP_clearTextLine( 12 );
+    VDP_clearTextLine( 20 );
+    VDP_drawImageEx(BG_A, &title, TILE_ATTR_FULL(PAL3, TRUE, FALSE, FALSE, tile_ind_title), 0, 0, FALSE, TRUE);    
+
+    // make all the rocks
+    createRocks(MAX_ROCKS);
+}
+
+void startLevel() {
+    // clear obs
+    clear_enemy_objs();
+            
+    u16 numRocks = 3 + level * 2;
+    if( numRocks >= MAX_ROCKS ) {
+        numRocks = MAX_ROCKS - 6;
+    }
+    // make all the rocks
+    createRocks(numRocks);
+}
+
 
 void update()
 {
 
     // update the player
-    if( ship_state & ship_live ) {
-        if( ship_state & ship_warping_in ) {
-            ship_ticks++;
-            if( ship_ticks < 150 ) {
-                if ( ship_ticks % 3 ) {
+    if( game_mode == play_mode ) {
+        if( ship_state & ship_live ) {
+            if( ship_state & ship_warping_in ) {
+                ship_ticks++;
+                if( ship_ticks < 150 ) {
+                    if ( ship_ticks % 3 ) {
+                        SPR_setVisibility(ship_sprite, VISIBLE);
+                    } else {
+                        SPR_setVisibility(ship_sprite, HIDDEN);
+                    }
+                } else {
                     SPR_setVisibility(ship_sprite, VISIBLE);
-                } else {
-                    SPR_setVisibility(ship_sprite, HIDDEN);
+                    ship_state ^= ship_warping_in;
                 }
-            } else {
-                SPR_setVisibility(ship_sprite, VISIBLE);
-                ship_state ^= ship_warping_in;
             }
-        }
-        ship_pos_x = ship_pos_x + ship_speed_x;
-        ship_pos_y = ship_pos_y + ship_speed_y;
+            ship_pos_x = ship_pos_x + ship_speed_x;
+            ship_pos_y = ship_pos_y + ship_speed_y;
 
-        if( ship_pos_x < FIX16(-6.0 - MAP_HALF_WIDTH ) ) {
-            ship_pos_x = FIX16(-6.0 - MAP_HALF_WIDTH);
-        } else if( ship_pos_x > FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 ) ) {
-            ship_pos_x = FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 );
-        }
+            if( ship_pos_x < FIX16(-6.0 - MAP_HALF_WIDTH ) ) {
+                ship_pos_x = FIX16(-6.0 - MAP_HALF_WIDTH);
+            } else if( ship_pos_x > FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 ) ) {
+                ship_pos_x = FIX16( MAP_HALF_WIDTH - PLAYER_WIDTH + 6 );
+            }
 
-        if( ship_pos_y < FIX16(-6.0 - MAP_HALF_HEIGHT) ) {
-            ship_pos_y = FIX16(-6.0 - MAP_HALF_HEIGHT);
-        } else if( ship_pos_y > FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 ) ) {
-            ship_pos_y = FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 );
-        }
-    } else {
-        ship_ticks++;
-        if( ship_state == ship_dead ) {
-            if( ship_ticks > 180 ) {
-                // spawn ship in 3 seconds.
-                if( lives > 0 ) {
-                    spawnShip();
-                } else {
-                    // game mode
-                    game_mode = attract_mode;
+            if( ship_pos_y < FIX16(-6.0 - MAP_HALF_HEIGHT) ) {
+                ship_pos_y = FIX16(-6.0 - MAP_HALF_HEIGHT);
+            } else if( ship_pos_y > FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 ) ) {
+                ship_pos_y = FIX16( MAP_HALF_HEIGHT - PLAYER_HEIGHT + 6 );
+            }
+        } else {
+            ship_ticks++;
+            if( ship_state == ship_dead ) {
+                if( ship_ticks > 180 ) {
+                    // spawn ship in 3 seconds.
+                    if( lives > 0 ) {
+                        spawnShip();
+                    } else {
+                        // game mode
+                        startAttractMode();
+                    }
                 }
             }
         }
@@ -786,83 +906,6 @@ void update()
     //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
 }
 
-void createRock(u8 i, u16 rockType, fix16 x, fix16 y ) {
-
-    obj_pos_x[i] = x;
-    obj_pos_y[i] = y;
-    u8 rot = random();
-    obj_live[i] = TRUE;
-    fix16 vel = FIX16(7.0);
-    if( rockType == ROCK ) {
-        obj_hit_w[i] = FIX16(30);
-        obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-    } else if ( rockType == MID_ROCK ) {
-        vel = FIX16(10.0);
-        obj_sprites[i] = SPR_addSprite(&mid_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-        obj_hit_w[i] = FIX16(22);
-    } else if ( rockType == SMALL_ROCK ) {
-        vel = FIX16(13.0);
-        obj_sprites[i] = SPR_addSprite(&small_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
-        obj_hit_w[i] = FIX16(14);
-    }
-    obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
-    obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
-    SPR_setAnim(obj_sprites[i], i % 4);
-    obj_type[i] = rockType;
-}
-
-
-void createRocks(u8 rockCount )
-{
-    for (u8 i = 0; i < MAX_ROCKS; ++i)
-    {
-        if( i < rockCount ) {
-            fix16 x = FIX16(-MAP_HALF_WIDTH);
-            fix16 y = FIX16(-MAP_HALF_HEIGHT);
-            if( random() %2 == 0 ) {
-                // x edges
-                y = FIX16(random() % (MAP_HEIGHT - 32) - MAP_HALF_HEIGHT );
-            } else {
-                x = FIX16(random() % (MAP_WIDTH - 32) - MAP_HALF_WIDTH );
-            }
-            createRock( i, ROCK, x, y );
-        } else {
-            // clear out the rest  of the rocks
-            obj_pos_x[i] = FIX16(-32);
-            obj_pos_y[i] = FIX16(-32);
-
-            obj_speed_x[i] = FIX16(0);
-            obj_speed_y[i] = FIX16(0);
-            obj_live[i] = FALSE;
-            obj_hit_w[i] = FIX16(0);
-            obj_sprites[i] = NULL;
-            obj_type[i] = NO_TYPE;
-        }
-    }
-}
-
-
-void splitRock(u16 whichRock )
-{
-    u8 count = 0;
-    fix16 x = obj_pos_x[whichRock];
-    fix16 y = obj_pos_y[whichRock];
-    u16 newType = MID_ROCK;
-    if( obj_type[whichRock] == MID_ROCK ) {
-        newType = SMALL_ROCK;
-    }
-    // u
-    for (u8 i = 0; i < MAX_ROCKS; ++i)
-    {
-        if( obj_live[i] == FALSE ) {
-            createRock( i, newType, x, y );
-            count++;
-            if ( count == 2 ) {
-                return; 
-            }
-        }
-    }
-}
 
 static void checkCollisions()
 {
@@ -874,7 +917,7 @@ static void checkCollisions()
 
             // check if ship has hit by anything that wasn't a player shot
             if ( game_mode == play_mode && obj_live[i] == TRUE && (ship_state & ship_live)      // ship is live
-                 && ! ((ship_state & ship_warp_pressed) || ( ship_state & ship_warping_in) ) && // but not in a warp state
+                    && ! ((ship_state & ship_warp_pressed) || ( ship_state & ship_warping_in) ) && // but not in a warp state
                     (obj_pos_x[i] + FIX16(2))      < (ship_pos_x + FIX16(21) ) &&
                     (obj_pos_x[i] + obj_hit_w[i] ) > (ship_pos_x + FIX16(3) )  &&
                     (obj_pos_y[i] + FIX16(2))      < (ship_pos_y + FIX16(21) ) &&
@@ -1060,6 +1103,8 @@ static void createExplosions()
     }
 }
 
+
+
 int main(bool hard)
 {
     clear_objs();
@@ -1119,39 +1164,35 @@ int main(bool hard)
     PAL_setPalette(PAL3, rock_pal.data, CPU);
 
     // Load the plane tiles into VRAM
-    int ind = TILE_USER_INDEX;
-    VDP_loadTileSet(&plane_b_tileset, ind, DMA);
-    int ind_title = ind +  plane_b_tileset.numTile;
-    VDP_loadTileSet(title.tileset, ind_title, DMA);
+    VDP_loadTileSet(&plane_b_tileset, tile_ind_map, DMA);
+    tile_ind_title = tile_ind_map +  plane_b_tileset.numTile;
+    VDP_loadTileSet(title.tileset, tile_ind_title, DMA);
 
 
     // init background map
-    map_b = MAP_create(&plane_b_map, BG_B, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, ind));
+    map_b = MAP_create(&plane_b_map, BG_B, TILE_ATTR_FULL(PAL1, FALSE, FALSE, FALSE, tile_ind_map));
     camPosX = 0 - SCR_WIDTH / 2;
     camPosY = 0 - SCR_HEIGHT / 2;
     MAP_scrollTo(map_b, camPosX, camPosY);
-
-    VDP_drawImageEx(BG_A, &title, TILE_ATTR_FULL(PAL3, TRUE, FALSE, FALSE, ind_title), 0, 0, FALSE, TRUE);    
 
 
     /////////////////////////////////////////////////////////////////////////////////
     // Init sprite engine with defaults
     SPR_initEx(900);
-    ship_pos_x = FIX16(- 32);
-    ship_pos_y = FIX16(- 32);
+    ship_pos_x = FIX16(0);
+    ship_pos_y = FIX16(0);
     warp_sprite = SPR_addSprite(&blink2, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     SPR_setVisibility(warp_sprite, HIDDEN);
     ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x), fix16ToInt(ship_pos_y), TILE_ATTR(PAL2, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
-    //Sprite* bsprite = SPR_addSprite(&link, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    SPR_setVisibility(ship_sprite, HIDDEN);
 
-
-
-
+    // create static sprites
     createShots();
     createExplosions();
 
-    createRocks(MAX_ROCKS);
+    // LFG
+    startAttractMode();
 
     JOY_setEventHandler(&inputCallback);
     u8 showStartMessage = 0;
@@ -1163,13 +1204,13 @@ int main(bool hard)
         // read game pads and make initial calcs
         if( game_mode == play_mode ) {
             sprintf( message, "Ships: %d  Score: %d ", lives, score);
-            VDP_drawText(message, 1,1 );
+            VDP_drawText(message, 2,3 );
             handleInput();
             if( delayTicks > 0 ) {
                 delayTicks--;
             } else if ( delayTicks == 0 ) {
                 // start it up
-                createRocks(5);
+                startLevel();
                 delayTicks--;
             } 
         } else {
@@ -1177,7 +1218,8 @@ int main(bool hard)
             if( showStartMessage < 40 ) {
                 VDP_drawText("Press Start", 14, 20 );
             } else if (showStartMessage < 60 ) {
-                VDP_drawText("           ", 14, 20 );
+                //VDP_drawText("           ", 14, 20 );
+                VDP_clearTextLine( 20 );
             } else {
                 showStartMessage = 0;
             }
