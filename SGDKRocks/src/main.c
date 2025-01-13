@@ -68,7 +68,7 @@ s16 camPosY; // relative to total world map
 static u8 tick = 0; // just a commn tick for everyone to use
 s16 delayTicks = -1; // count down times to delay events, like rocks at the start of a level.
 u16 level = 1;
-
+bool levelStarted = false;
 
 enum GAME_MODE {
     attract_mode,
@@ -169,8 +169,6 @@ void clear_enemy_objs() {
         obj_pos_y[i] = 0;
         obj_type[i] = 0;
         obj_hit_w[i] = 0;
-    }
-    for( u8 i=0; i < MAX_ROCKS+1; ++i ) {
         obj_live[i] = FALSE;
     }
 }
@@ -322,11 +320,12 @@ void inputCallback(u16 joy, u16 changed, u16 state)
         if (changed & state & BUTTON_START ) {
             clear_enemy_objs();
             level = 1;
-            lives = 99;
+            lives = 5;
             game_mode = play_mode;
             VDP_clearPlane( BG_A, FALSE);
             spawnShip();
             delayTicks = 120;
+            levelStarted = false;
            // VDP_drawText("           ", 14, 20 );
             VDP_clearTextLine( 20 );
 
@@ -490,23 +489,17 @@ void createUfo( )  {
     // start at same Y as ship
     obj_pos_y[UFO_SLOT]= ship_pos_y;
 
+
     if(  random() % 2 == 0 ) {
         // go left to right
         obj_speed_x[UFO_SLOT] = vel;
-        obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(224);
+        obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(220);
     } else {
         // right to left
         obj_speed_x[UFO_SLOT] = -vel;
-        obj_pos_x[UFO_SLOT]= ship_pos_x + FIX16(224);
+        obj_pos_x[UFO_SLOT]= ship_pos_x + FIX16(220);
     }
 
-    /*
-       obj_type[UFO_SLOT] = SMALL_UFO;
-       obj_speed_x[UFO_SLOT] = FIX16(0);
-       obj_pos_x[UFO_SLOT]= ship_pos_x - FIX16(50);
-       obj_speed_y[UFO_SLOT] = FIX16(0);
-       obj_pos_y[UFO_SLOT]= ship_pos_y - FIX16(60);
-       */
     obj_live[UFO_SLOT] = TRUE;
 
     SPR_setAnim(obj_sprites[UFO_SLOT], 0);
@@ -643,7 +636,8 @@ void updateUfo()
                 }
             }
         }
-        if ( ufoTick % UFO_SHOT_TICKS  == 0 ) {
+        // fire when on scren.
+        if ( ufoTick % UFO_SHOT_TICKS  == 0 && obj_live[UFO_SLOT] == TRUE && SPR_isVisible( obj_sprites[UFO_SLOT], true )) {
             fireUfoShot();
         }
 
@@ -757,7 +751,7 @@ void startLevel() {
     clear_enemy_objs();
            
     // figure out how many rocks for this level 
-    u16 numRocks = 3 + level * 2;
+    u8 numRocks = 3 + level * 2;
     if( numRocks >= MAX_ROCKS ) {
         numRocks = MAX_ROCKS - 6;
     }
@@ -772,6 +766,7 @@ void startLevel() {
  
     // make all the rocks
     createRocks(numRocks);
+    levelStarted = true;
 }
 
 
@@ -916,19 +911,19 @@ void update()
     }
 
     // check if rocks all rocks are gone once in a while
-    if( tick % 10 == 0 ) {
+    if( tick % 10 == 0 && levelStarted == true ) {
         //  
-        bool rocksFound = false;
         rockCount = 0;
         for( u16 i=0; i < UFO_SLOT; ++i ) 
         {
             if( obj_live[i] == true ) {
-                rocksFound = true;
                 rockCount++;
             }
         }
-        if( rocksFound ) {
-            delayTicks = 180;
+        if( rockCount == 0 ) {
+            level++;
+            levelStarted = false;
+            delayTicks = 120;
         }
     }
 
@@ -1233,7 +1228,7 @@ int main(bool hard)
 
         // read game pads and make initial calcs
         if( game_mode == play_mode ) {
-            sprintf( message, "Ships: %d  Score: %d Rocks: %d", lives, score, rockCount);
+            sprintf( message, "Ships: %d  Score: %d Rocks: %d ", lives, score, rockCount);
             VDP_drawText(message, 2,3 );
             handleInput();
             if( delayTicks > 0 ) {
