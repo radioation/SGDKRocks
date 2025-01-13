@@ -90,7 +90,8 @@ fix16 obj_pos_y[MAX_OBJECTS];
 fix16 obj_hit_w[MAX_OBJECTS];
 s16 obj_ticks[MAX_OBJECTS];
 bool obj_live[MAX_OBJECTS];
-
+fix16 rockVelocity = FIX16(3.0);
+u8 rockCount = 0;
 #define NO_TYPE 0
 #define PLAYER 1
 #define PLAYER_SHOT 2
@@ -305,7 +306,7 @@ void inputCallback(u16 joy, u16 changed, u16 state)
                 if (obj_live[i] == FALSE)
                 {
                     // create a new one
-                    XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
+                    XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH1);
 
                     obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
                     obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
@@ -320,8 +321,8 @@ void inputCallback(u16 joy, u16 changed, u16 state)
     } else {
         if (changed & state & BUTTON_START ) {
             clear_enemy_objs();
-            level = 10;
-            lives = 3;
+            level = 1;
+            lives = 99;
             game_mode = play_mode;
             VDP_clearPlane( BG_A, FALSE);
             spawnShip();
@@ -657,16 +658,16 @@ void createRock(u8 i, u16 rockType, fix16 x, fix16 y ) {
     obj_pos_y[i] = y;
     u8 rot = random();
     obj_live[i] = TRUE;
-    fix16 vel = FIX16(7.0);
+    fix16 vel = rockVelocity;
     if( rockType == ROCK ) {
         obj_hit_w[i] = FIX16(30);
         obj_sprites[i] = SPR_addSprite(&rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     } else if ( rockType == MID_ROCK ) {
-        vel = FIX16(10.0);
+        vel = rockVelocity + FIX16(2);
         obj_sprites[i] = SPR_addSprite(&mid_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
         obj_hit_w[i] = FIX16(22);
     } else if ( rockType == SMALL_ROCK ) {
-        vel = FIX16(13.0);
+        vel = rockVelocity + FIX16(4);
         obj_sprites[i] = SPR_addSprite(&small_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
         obj_hit_w[i] = FIX16(14);
     }
@@ -677,11 +678,11 @@ void createRock(u8 i, u16 rockType, fix16 x, fix16 y ) {
 }
 
 
-void createRocks(u8 rockCount )
+void createRocks(u8 numRocks )
 {
     for (u8 i = 0; i < MAX_ROCKS; ++i)
     {
-        if( i < rockCount ) {
+        if( i < numRocks ) {
             fix16 x = FIX16(-MAP_HALF_WIDTH);
             fix16 y = FIX16(-MAP_HALF_HEIGHT);
             if( random() %2 == 0 ) {
@@ -754,11 +755,21 @@ void startAttractMode() {
 void startLevel() {
     // clear obs
     clear_enemy_objs();
-            
+           
+    // figure out how many rocks for this level 
     u16 numRocks = 3 + level * 2;
     if( numRocks >= MAX_ROCKS ) {
         numRocks = MAX_ROCKS - 6;
     }
+    // change base rock velocity
+    fix16 flvl = FIX16( level );
+    rockVelocity = FIX16(3.0) +  fix16Mul( flvl, FIX16( 0.5 ) );
+    if( rockVelocity > FIX16(10) ) {
+        rockVelocity = FIX16(10);
+    }
+   
+    // change UFO parameters
+ 
     // make all the rocks
     createRocks(numRocks);
 }
@@ -903,7 +914,24 @@ void update()
             SPR_setPosition(warp_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
         }
     }
-    //SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
+
+    // check if rocks all rocks are gone once in a while
+    if( tick % 10 == 0 ) {
+        //  
+        bool rocksFound = false;
+        rockCount = 0;
+        for( u16 i=0; i < UFO_SLOT; ++i ) 
+        {
+            if( obj_live[i] == true ) {
+                rocksFound = true;
+                rockCount++;
+            }
+        }
+        if( rocksFound ) {
+            delayTicks = 180;
+        }
+    }
+
 }
 
 
@@ -949,6 +977,8 @@ static void checkCollisions()
                 --lives;    
                 ship_state = ship_dead;
                 ship_ticks = 0;
+                XGM_startPlayPCM(SND_EXPLOSION, 10, SOUND_PCM_CH1);
+                showExplosion(ship_pos_x, ship_pos_y );  
                 ship_speed_x = FIX16(0);  
                 ship_speed_y = FIX16(0);  
                 SPR_setVisibility(ship_sprite, HIDDEN);
@@ -957,7 +987,7 @@ static void checkCollisions()
                 }
             }
 
-            // if UFO is live and  check if a rock hit it.
+            // if UFO is live check if a rock hit it.
             if(i < UFO_SLOT &&  obj_live[UFO_SLOT] == TRUE ) {
                 if( SPR_isVisible(obj_sprites[UFO_SLOT], false) &&
                         (obj_pos_x[i] + FIX16(2))      <  (obj_pos_x[UFO_SLOT] + obj_hit_w[UFO_SLOT]) &&
@@ -1203,7 +1233,7 @@ int main(bool hard)
 
         // read game pads and make initial calcs
         if( game_mode == play_mode ) {
-            sprintf( message, "Ships: %d  Score: %d ", lives, score);
+            sprintf( message, "Ships: %d  Score: %d Rocks: %d", lives, score, rockCount);
             VDP_drawText(message, 2,3 );
             handleInput();
             if( delayTicks > 0 ) {
