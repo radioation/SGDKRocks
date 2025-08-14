@@ -164,7 +164,7 @@ static void createBossShots() {
     bossShots[i].hb.x2 = FIX16(8);
     bossShots[i].hb.y2 = FIX16(8);
 
-    bossShots[i].sprite = SPR_addSprite( &shots, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
+    bossShots[i].sprite = SPR_addSprite( &shots, F16_toInt(xpos), F16_toInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
     SPR_setAnim( bossShots[i].sprite, 0 );
   }
 }
@@ -178,8 +178,8 @@ static void addExplosion(  fix16 pos_x, fix16 pos_y ) {
     explosions[currentExplosion].active = TRUE;
     explosions[currentExplosion].frame = 0;
     SPR_setVisibility( explosions[currentExplosion].sprite, VISIBLE);
-    SPR_setPosition( explosions[currentExplosion].sprite,fix16ToInt(explosions[
-          currentExplosion].pos_x),fix16ToInt(explosions[currentExplosion].pos_y));
+    SPR_setPosition( explosions[currentExplosion].sprite,F16_toInt(explosions[
+          currentExplosion].pos_x),F16_toInt(explosions[currentExplosion].pos_y));
 
     XGM_startPlayPCM(SND_EXPLOSION,10,SOUND_PCM_CH3);
 
@@ -355,7 +355,7 @@ static void update() {
   player.pos_x += player.vel_x;
   player.pos_y += player.vel_y;
 
-  SPR_setPosition( player.sprite, fix16ToInt(player.pos_x), fix16ToInt(player.pos_y) );
+  SPR_setPosition( player.sprite, F16_toInt(player.pos_x), F16_toInt(player.pos_y) );
   // PLAYER shots///////////////////////////////////////////
   for( u16 i=0; i < MAX_PLAYER_SHOTS; ++i ) {
     if( playerShots[i].active == TRUE ) {
@@ -366,7 +366,7 @@ static void update() {
         playerShots[i].active = FALSE;
       } else {
         SPR_setVisibility( playerShots[i].sprite, VISIBLE);
-        SPR_setPosition( playerShots[i].sprite,fix16ToInt(playerShots[i].pos_x),fix16ToInt(playerShots[i].pos_y));
+        SPR_setPosition( playerShots[i].sprite,F16_toInt(playerShots[i].pos_x),F16_toInt(playerShots[i].pos_y));
       }
     }
   }
@@ -384,7 +384,7 @@ static void update() {
         SPR_setVisibility( bossShots[i].sprite, HIDDEN);
       } else {
         SPR_setVisibility( bossShots[i].sprite, VISIBLE);
-        SPR_setPosition( bossShots[i].sprite,fix16ToInt(bossShots[i].pos_x),fix16ToInt(bossShots[i].pos_y));
+        SPR_setPosition( bossShots[i].sprite,F16_toInt(bossShots[i].pos_x),F16_toInt(bossShots[i].pos_y));
       }
     }
   }
@@ -538,7 +538,7 @@ static void createShipShots() {
     playerShots[i].hb.x2 = FIX16(8);
     playerShots[i].hb.y2 = FIX16(8);
 
-    playerShots[i].sprite = SPR_addSprite( &shots, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
+    playerShots[i].sprite = SPR_addSprite( &shots, F16_toInt(xpos), F16_toInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
     SPR_setAnim( playerShots[i].sprite, 3 );
   }
 
@@ -559,7 +559,7 @@ static void createExplosions() {
     explosions[i].hb.x2 = FIX16(0);
     explosions[i].hb.y2 = FIX16(0);
 
-    explosions[i].sprite = SPR_addSprite( &boomsheet, fix16ToInt(xpos), fix16ToInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
+    explosions[i].sprite = SPR_addSprite( &boomsheet, F16_toInt(xpos), F16_toInt(ypos), TILE_ATTR( PAL3, 0, FALSE, FALSE ));
     SPR_setVisibility( explosions[i].sprite, HIDDEN );
     SPR_setDepth( explosions[i].sprite, SPR_MIN_DEPTH );
   }
