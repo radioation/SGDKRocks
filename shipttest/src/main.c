@@ -190,7 +190,7 @@ void update() {
     } else if( ship_pos_y > FIX16(248.0) ) {
         ship_pos_y = FIX16(-24.0);
     }
-    SPR_setPosition( ship_sprite, fix16ToInt( ship_pos_x ), fix16ToInt( ship_pos_y ) );
+    SPR_setPosition( ship_sprite, F16_toInt( ship_pos_x ), F16_toInt( ship_pos_y ) );
 
 }
 
@@ -249,16 +249,16 @@ int main(bool hard)
     u16 pos = 0;
     for( s16 i = 64; i >= 0; i-- ) {
         thrustX[pos] = cosFix16(i * 4);
-        max_speed_x[pos] = fix16Mul( max_speed, thrustX[pos]);
+        max_speed_x[pos] = F16_mul( max_speed, thrustX[pos]);
         thrustY[pos] = -sinFix16(i * 4);  // flip the Y. We're not mathemagicians
-        max_speed_y[pos] = fix16Mul( max_speed, thrustY[pos]);
+        max_speed_y[pos] = F16_mul( max_speed, thrustY[pos]);
         pos++;
     }
     for( s16 i = 255; i > 64; i-- ) {
         thrustX[pos] = cosFix16(i * 4);
-        max_speed_x[pos] = fix16Mul( max_speed, thrustX[pos]);
+        max_speed_x[pos] = F16_mul( max_speed, thrustX[pos]);
         thrustY[pos] = -sinFix16(i * 4);
-        max_speed_y[pos] = fix16Mul( max_speed, thrustY[pos]);
+        max_speed_y[pos] = F16_mul( max_speed, thrustY[pos]);
         pos++;
     }
 
@@ -271,7 +271,7 @@ int main(bool hard)
     SPR_initEx(900); // MOAR sprites.
     ship_pos_x = FIX16( playfield_width/2 - 8 );
     ship_pos_y = FIX16( playfield_height/2 - 8 );
-    ship_sprite = SPR_addSprite(&redship, fix16ToInt(ship_pos_x), fix16ToInt(ship_pos_y), TILE_ATTR(PAL0, 0, FALSE, FALSE));
+    ship_sprite = SPR_addSprite(&redship, F16_toInt(ship_pos_x), F16_toInt(ship_pos_y), TILE_ATTR(PAL0, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
 
     Sprite* bship = SPR_addSprite(&blueship, 48, 48, TILE_ATTR(PAL0, 0, FALSE, FALSE));

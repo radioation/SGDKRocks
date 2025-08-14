@@ -38,8 +38,8 @@ void fireUfoShot() {
         } else {
 
             // get absolute values
-            s16 absX = fix16ToInt(abs(deltaX));
-            s16 absY = fix16ToInt(abs(deltaY));
+            s16 absX = F16_toInt(abs(deltaX));
+            s16 absY = F16_toInt(abs(deltaY));
 
             sprintf( msg, "ax: %d ay: %d ", absX, absY );
             VDP_drawText(msg, 0, cursor_y );
@@ -133,13 +133,13 @@ int main(bool hard)
     // starting with UP to match ship directions
     u16 pos = 0;
     for( s16 i = 16; i >= 0; i-- ) {
-        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(5));
-        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(5)); 
+        ufoShotX[pos] =  F16_mul( cosFix16(i * 16), FIX16(5));
+        ufoShotY[pos] = -F16_mul( sinFix16(i * 16), FIX16(5)); 
         pos++;
     }
     for( s16 i = 63; i > 16; i-- ) {
-        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(5));
-        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(5));  
+        ufoShotX[pos] =  F16_mul( cosFix16(i * 16), FIX16(5));
+        ufoShotY[pos] = -F16_mul( sinFix16(i * 16), FIX16(5));  
         pos++;
     }
 
