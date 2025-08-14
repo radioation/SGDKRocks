@@ -1,6 +1,11 @@
 #include <genesis.h>
 #include "network.h"
 
+char str[8];                      
+bool cart_present;                
+u16  readIndex, writeIndex;       
+char receive_buffer[BUFFER_SIZE]; 
+
 //****************************************************************
 // Initialize Network Adapter
 //****************************************************************
