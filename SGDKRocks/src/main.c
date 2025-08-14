@@ -200,8 +200,8 @@ static void showExplosion(fix16 pos_x, fix16 pos_y)
 {
     if (explosion_live[currentExplosion] == FALSE)
     {
-        s16 x = fix16ToInt(pos_x)- camPosX + MAP_HALF_WIDTH;
-        s16 y = fix16ToInt(pos_y)- camPosY + MAP_HALF_HEIGHT;
+        s16 x = F16_toInt(pos_x)- camPosX + MAP_HALF_WIDTH;
+        s16 y = F16_toInt(pos_y)- camPosY + MAP_HALF_HEIGHT;
         // use it
         explosion_live[currentExplosion] = TRUE;
         explosion_ticks[currentExplosion] = 0;
@@ -233,8 +233,8 @@ void spawnShip() {
 
 void updateCameraPos()
 {
-    s16 px = fix16ToInt(ship_pos_x);
-    s16 py = fix16ToInt(ship_pos_y);
+    s16 px = F16_toInt(ship_pos_x);
+    s16 py = F16_toInt(ship_pos_y);
 
     s16 playerScreenX = px - camPosX;
     s16 playerScreenY = py - camPosY;
@@ -306,8 +306,8 @@ void inputCallback(u16 joy, u16 changed, u16 state)
                     // create a new one
                     XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH1);
 
-                    obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
-                    obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
+                    obj_pos_x[i] = ship_pos_x+ FIX16(SHOT_OFFSET_X) ;// + F16_mul(thrustX[shipDir], FIX16(2.0));
+                    obj_pos_y[i] = ship_pos_y+ FIX16(SHOT_OFFSET_Y) ;// + F16_mul(thrustY[shipDir], FIX16(2.0));
                     obj_speed_x[i] = ship_speed_x + (thrustX[shipDir] << 4 );
                     obj_speed_y[i] = ship_speed_y + (thrustY[shipDir] << 4 );
                     obj_live[i] = TRUE;
@@ -525,8 +525,8 @@ void fireUfoShot() {
         } else {
 
             // get absolute values
-            s16 absX = fix16ToInt(abs(deltaX));
-            s16 absY = fix16ToInt(abs(deltaY));
+            s16 absX = F16_toInt(abs(deltaX));
+            s16 absY = F16_toInt(abs(deltaY));
 
 
             if( absX == absY ) {
@@ -595,8 +595,8 @@ void fireUfoShot() {
             // create a new one
             XGM_startPlayPCM(SND_LASER, 1, SOUND_PCM_CH2);
 
-            obj_pos_x[i] = obj_pos_x[UFO_SLOT] + FIX16(SHOT_OFFSET_X) ;// + fix16Mul(thrustX[shipDir], FIX16(2.0));
-            obj_pos_y[i] = obj_pos_y[UFO_SLOT] + FIX16(SHOT_OFFSET_Y) ;// + fix16Mul(thrustY[shipDir], FIX16(2.0));
+            obj_pos_x[i] = obj_pos_x[UFO_SLOT] + FIX16(SHOT_OFFSET_X) ;// + F16_mul(thrustX[shipDir], FIX16(2.0));
+            obj_pos_y[i] = obj_pos_y[UFO_SLOT] + FIX16(SHOT_OFFSET_Y) ;// + F16_mul(thrustY[shipDir], FIX16(2.0));
             obj_speed_x[i] = obj_speed_x[UFO_SLOT] + (ufoShotX[shotDir] );
             obj_speed_y[i] = obj_speed_y[UFO_SLOT] + (ufoShotY[shotDir] );
             obj_live[i] = TRUE;
@@ -625,7 +625,7 @@ void updateUfo()
         // change Y veolcity every once in a while.
         if ( ufoTick % 60 == 0 ) {
             u8 rot = random();
-            obj_speed_y[UFO_SLOT] = fix16Mul(FIX16(4.0), thrustY[rot]);
+            obj_speed_y[UFO_SLOT] = F16_mul(FIX16(4.0), thrustY[rot]);
             if(  (obj_pos_y[UFO_SLOT] - ship_pos_y ) < FIX16(50.0) ) {
                 if( obj_speed_y[UFO_SLOT] < FIX16(0.0) ) {
                     obj_speed_y[UFO_SLOT] =  - obj_speed_y[UFO_SLOT];
@@ -665,8 +665,8 @@ void createRock(u8 i, u16 rockType, fix16 x, fix16 y ) {
         obj_sprites[i] = SPR_addSprite(&small_rock, -32, -32, TILE_ATTR(PAL3, 0, FALSE, FALSE));
         obj_hit_w[i] = FIX16(14);
     }
-    obj_speed_x[i] = fix16Mul( vel, thrustX[rot] );
-    obj_speed_y[i] = fix16Mul( vel, thrustY[rot] );
+    obj_speed_x[i] = F16_mul( vel, thrustX[rot] );
+    obj_speed_y[i] = F16_mul( vel, thrustY[rot] );
     SPR_setAnim(obj_sprites[i], i % 4);
     obj_type[i] = rockType;
 }
@@ -757,7 +757,7 @@ void startLevel() {
     }
     // change base rock velocity
     fix16 flvl = FIX16( level );
-    rockVelocity = FIX16(3.0) +  fix16Mul( flvl, FIX16( 0.5 ) );
+    rockVelocity = FIX16(3.0) +  F16_mul( flvl, FIX16( 0.5 ) );
     if( rockVelocity > FIX16(10) ) {
         rockVelocity = FIX16(10);
     }
@@ -858,8 +858,8 @@ void update()
                 obj_pos_y[i] = FIX16(-32-MAP_HALF_HEIGHT);
             }
 
-            s16 x = fix16ToInt(obj_pos_x[i]) - camPosX + MAP_HALF_WIDTH;
-            s16 y = fix16ToInt(obj_pos_y[i]) - camPosY + MAP_HALF_HEIGHT;
+            s16 x = F16_toInt(obj_pos_x[i]) - camPosX + MAP_HALF_WIDTH;
+            s16 y = F16_toInt(obj_pos_y[i]) - camPosY + MAP_HALF_HEIGHT;
             if (x >= -32 && x < SCR_WIDTH && y >= -32 && y < SCR_HEIGHT)
             {
                 SPR_setVisibility(obj_sprites[i], VISIBLE);
@@ -901,12 +901,12 @@ void update()
         if( (ship_state & ship_warp_pressed) && ( tick & 0x04 ) ) {
             ship_warp_pos_x = ship_pos_x + ( thrustX[shipDir] << 8 );
             ship_warp_pos_y = ship_pos_y + ( thrustY[shipDir] << 8 );
-            SPR_setPosition(ship_sprite, fix16ToInt(ship_warp_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_warp_pos_y) - camPosY + MAP_HALF_HEIGHT);
-            SPR_setPosition(warp_sprite, fix16ToInt(ship_warp_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_warp_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(ship_sprite, F16_toInt(ship_warp_pos_x) - camPosX + MAP_HALF_WIDTH, F16_toInt(ship_warp_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(warp_sprite, F16_toInt(ship_warp_pos_x) - camPosX + MAP_HALF_WIDTH, F16_toInt(ship_warp_pos_y) - camPosY + MAP_HALF_HEIGHT);
 
         } else {
-            SPR_setPosition(ship_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
-            SPR_setPosition(warp_sprite, fix16ToInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, fix16ToInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(ship_sprite, F16_toInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, F16_toInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
+            SPR_setPosition(warp_sprite, F16_toInt(ship_pos_x) - camPosX + MAP_HALF_WIDTH, F16_toInt(ship_pos_y) - camPosY + MAP_HALF_HEIGHT);
         }
     }
 
@@ -1140,21 +1140,21 @@ int main(bool hard)
     // start at PI/2 and procede clockwise
     //   in FIX16 90 degrees is at 256  ( 1/4 1024)
     for( s16 i = 64; i >= 0; i-- ) {
-        thrustX[pos] =  fix16Div( cosFix16(i * 4), FIX16(5));
-        max_speed_x[pos] = fix16Mul( max_speed, cosFix16(i*4));
-        thrustY[pos] = -fix16Div( sinFix16(i * 4), FIX16(5));  // flip the Y. We're not mathemagicians
-        max_speed_y[pos] = -fix16Mul( max_speed, sinFix16(i*4));
+        thrustX[pos] =  F16_div( cosFix16(i * 4), FIX16(5));
+        max_speed_x[pos] = F16_mul( max_speed, cosFix16(i*4));
+        thrustY[pos] = -F16_div( sinFix16(i * 4), FIX16(5));  // flip the Y. We're not mathemagicians
+        max_speed_y[pos] = -F16_mul( max_speed, sinFix16(i*4));
         pos++;
     }
     for( s16 i = 255; i > 64; i-- ) {
         //thrustX[pos] = cosFix16(i * 4);
-        //max_speed_x[pos] = fix16Mul( max_speed, thrustX[pos]);
+        //max_speed_x[pos] = F16_mul( max_speed, thrustX[pos]);
         //thrustY[pos] = -sinFix16(i * 4);
-        //max_speed_y[pos] = fix16Mul( max_speed, thrustY[pos]);
-        thrustX[pos] =  fix16Div( cosFix16(i * 4), FIX16(5));
-        max_speed_x[pos] = fix16Mul( max_speed, cosFix16(i*4));
-        thrustY[pos] = -fix16Div( sinFix16(i * 4), FIX16(5));  // flip the Y. We're not mathemagicians
-        max_speed_y[pos] = -fix16Mul( max_speed, sinFix16(i*4));
+        //max_speed_y[pos] = F16_mul( max_speed, thrustY[pos]);
+        thrustX[pos] =  F16_div( cosFix16(i * 4), FIX16(5));
+        max_speed_x[pos] = F16_mul( max_speed, cosFix16(i*4));
+        thrustY[pos] = -F16_div( sinFix16(i * 4), FIX16(5));  // flip the Y. We're not mathemagicians
+        max_speed_y[pos] = -F16_mul( max_speed, sinFix16(i*4));
         pos++;
     }
 
@@ -1163,13 +1163,13 @@ int main(bool hard)
     // starting with UP to match ship directions
     pos = 0;
     for( s16 i = 16; i >= 0; i-- ) {
-        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(3));
-        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(3)); 
+        ufoShotX[pos] =  F16_mul( cosFix16(i * 16), FIX16(3));
+        ufoShotY[pos] = -F16_mul( sinFix16(i * 16), FIX16(3)); 
         pos++;
     }
     for( s16 i = 63; i > 16; i-- ) {
-        ufoShotX[pos] =  fix16Mul( cosFix16(i * 16), FIX16(3));
-        ufoShotY[pos] = -fix16Mul( sinFix16(i * 16), FIX16(3));  
+        ufoShotX[pos] =  F16_mul( cosFix16(i * 16), FIX16(3));
+        ufoShotY[pos] = -F16_mul( sinFix16(i * 16), FIX16(3));  
         pos++;
     }
 
@@ -1206,9 +1206,9 @@ int main(bool hard)
     SPR_initEx(900);
     ship_pos_x = FIX16(0);
     ship_pos_y = FIX16(0);
-    warp_sprite = SPR_addSprite(&blink2, fix16ToInt(ship_pos_x) - camPosX, fix16ToInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
+    warp_sprite = SPR_addSprite(&blink2, F16_toInt(ship_pos_x) - camPosX, F16_toInt(ship_pos_y) - camPosY, TILE_ATTR(PAL3, 0, FALSE, FALSE));
     SPR_setVisibility(warp_sprite, HIDDEN);
-    ship_sprite = SPR_addSprite(&ship, fix16ToInt(ship_pos_x), fix16ToInt(ship_pos_y), TILE_ATTR(PAL2, 0, FALSE, FALSE));
+    ship_sprite = SPR_addSprite(&ship, F16_toInt(ship_pos_x), F16_toInt(ship_pos_y), TILE_ATTR(PAL2, 0, FALSE, FALSE));
     SPR_setAnim(ship_sprite, 0);
     SPR_setVisibility(ship_sprite, HIDDEN);
 
