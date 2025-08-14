@@ -1,3 +1,6 @@
+#ifndef _NETWORK_H_
+#define _NETWORK_H_
+
 #include <types.h>
 
 #define UART_BASE   0xA130C1
@@ -16,11 +19,11 @@
 #define BUFFER_SIZE     64          // Size of software receive buffer in bytes.
                                     // UART Send/Receive hardware buffers are 128 Bytes each
 
-char str[8];                        // For data conversions and display (debug mostly)
-bool cart_present;                  // Flag indicating presense of hardware
+extern char str[8];                        // For data conversions and display (debug mostly)
+extern bool cart_present;                  // Flag indicating presense of hardware
 
-u16  readIndex, writeIndex;         // Receive buffer Read/Write indexes
-char receive_buffer[BUFFER_SIZE];   // Our circular network receive buffer
+extern u16  readIndex, writeIndex;         // Receive buffer Read/Write indexes
+extern char receive_buffer[BUFFER_SIZE];   // Our circular network receive buffer
 
 u8   NET_readByte(void);
 u8   NET_readBuffer(void);
@@ -42,3 +45,5 @@ void NET_printIP(int x, int y);
 void NET_printMAC(int x, int y);
 void NET_connect(int x, int y, char *str);
 void NET_pingIP(int x, int y, int ping_count, char *ip);
+
+#endif _NETWORK_H_
