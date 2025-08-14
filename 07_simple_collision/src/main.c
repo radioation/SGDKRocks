@@ -402,7 +402,7 @@ int main( bool h ) {
   JOY_setEventHandler( &myJoyHandler );
 
   while(TRUE) {
-    VDP_showFPS(TRUE);
+    VDP_showFPS(TRUE, 1, 1);
 
     // 1) update objects in game
     update();

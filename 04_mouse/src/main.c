@@ -15,8 +15,8 @@ int main(bool hard)
 	fix32 posY = FIX32(108.0);
 
 	ufoSprite = SPR_addSprite( &ufo,               // Sprite defined in resource.res
-															fix32ToInt(posX),  // starting X position
-															fix32ToInt(posY),  // starting Y position
+															F32_toInt(posX),  // starting X position
+															F32_toInt(posY),  // starting Y position
 															TILE_ATTR( PAL1,   // specify palette
 																					1,     // Tile priority ( with background)
 																					FALSE, // flip the sprite vertically?
@@ -72,8 +72,8 @@ int main(bool hard)
 
 
 			// Figure out how much the mice have moved.  
-			fix32 x_delta = fix32Div( FIX32(x_mouse) - FIX32(prev_x_mouse), sensitivity);
-			fix32 y_delta = fix32Div( FIX32(prev_y_mouse) - FIX32(y_mouse), sensitivity);
+			fix32 x_delta = F32_div( FIX32(x_mouse) - FIX32(prev_x_mouse), sensitivity);
+			fix32 y_delta = F32_div( FIX32(prev_y_mouse) - FIX32(y_mouse), sensitivity);
 
 			// change the mouse position.
 			posX = posX + x_delta;
@@ -83,7 +83,7 @@ int main(bool hard)
 			prev_y_mouse = y_mouse;
      
 		 	// Move the sprite
-			SPR_setPosition( ufoSprite, fix32ToInt(posX), fix32ToInt(posY));
+			SPR_setPosition( ufoSprite, F32_toInt(posX), F32_toInt(posY));
 			SPR_update();
 		}
 
