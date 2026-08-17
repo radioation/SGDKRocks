@@ -322,7 +322,7 @@ void inputCallback(u16 joy, u16 changed, u16 state)
             level = 1;
             lives = 5;
             game_mode = play_mode;
-            VDP_clearPlane( BG_A, FALSE);
+            VDP_clearPlane( BG_A, TRUE);
             spawnShip();
             delayTicks = 120;
             levelStarted = false;
